@@ -39,6 +39,8 @@ main() {
     sysinfo::detect_all
 	sysinfo::print_summary
 
+    packaging::uninstall Nucleus flatpak 1
+
 	logger::info "Done"
 }
 

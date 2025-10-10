@@ -227,9 +227,10 @@ sysinfo::detect_all() {
 }
 
 sysinfo::print_summary() {
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	logger::debug "Printing sysinfo summary"
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	echo "System Information"
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	echo "OS:               ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
 	echo "Kernel:           ${SYS_KERNEL}"
 	echo "Architecture:     ${SYS_ARCH}"
@@ -240,7 +241,7 @@ sysinfo::print_summary() {
 	echo "Container:        $([[ ${SYS_IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
 	echo "Network:          $([[ ${SYS_HAS_NETWORK} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
 	echo "Running as:       $([[ ${SYS_IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
 sysinfo::require_root() {

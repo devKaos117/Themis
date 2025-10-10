@@ -134,7 +134,7 @@ packaging::_is_available() {
 			;;
 		flatpak)
 			packaging::_check_flatpak || return 1
-			flatpak search "${pkg}" | grep -q "^Name: ${pkg}"
+			flatpak search "${pkg}" | grep -qi "^${pkg}"
 			;;
 		*)
 			logger::error "Unsuported package manager: ${PACKAGER}"
@@ -151,7 +151,7 @@ packaging::install() {
 	local package="$1"
 	local manager="${2:-auto}" # auto, apt, dnf, pacman, snap, flatpak
 	
-	logger::debug "Installing package: ${package} (manager: ${manager})"
+	logger::debug "Installing package (${manager}): ${package}"
 	
 	sysinfo::require_root || return 1
 	sysinfo::require_network || return 1
@@ -227,8 +227,186 @@ packaging::install() {
 			return 1
 			;;
 	esac
-	
+
 	logger::info "Successfully installed ${package}"
+	return 0
+}
+
+packaging::uninstall() {
+	local package="$1"
+	local manager="${2:-auto}" # auto, apt, dnf, pacman, snap, flatpak
+	local purge="${3:-0}" # 1=purge, 0=keep configs
+	
+	logger::debug "Uninstalling $(if [[ ${purge} -eq 1 ]] ;then echo "(purge)"; fi) package (${manager}): ${package}"
+	
+	sysinfo::require_root || return 1
+	
+	# Auto-detect manager if not specified
+	if [[ "${manager}" == "auto" ]]; then
+		manager="${PACKAGER}"
+	fi
+	
+	if ! packaging::_is_installed "${package}" "${manager}"; then
+		logger::debug "Package '${package}' is not installed"
+		return 0
+	fi
+
+	case "${manager}" in
+		apt)
+			if [[ ${purge} -eq 1 ]]; then
+				apt purge -y "${package}" || {
+					logger::error "Failed to purge ${package}"
+					return 1
+				}
+			else
+				apt remove -y "${package}" || {
+					logger::error "Failed to uninstall ${package}"
+					return 1
+				}
+			fi
+			# autoremove and autoclean
+			apt autoremove -y || logger::warning "apt autoremove failed"
+			apt autoclean -y || logger::warning "apt autoclean failed"
+			;;
+		dnf)
+			# Fetch config files if configured to purge
+			local config_files
+			if [[ ${purge} -eq 1 ]]; then
+				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
+			fi
+
+			dnf remove -y "${package}" || {
+				logger::error "Failed to uninstall ${package}"
+				return 1
+			}
+			
+			# Purge
+			if [[ -n "${config_files}" ]]; then
+				echo "${config_files}" | while IFS= read -r file; do
+					if [[ -f "${file}" || -d "${file}" ]]; then
+						rm -rf "${file}" || logger::warning "Failed to remove ${file}"
+					fi
+				done
+			fi
+
+			# autoremove and clean
+			dnf autoremove -y || logger::warning "dnf autoremove failed"
+			dnf clean all || logger::warning "dnf clean failed"
+			;;
+		yum)
+			# Fetch config files if configured to purge
+			local config_files
+			if [[ ${purge} -eq 1 ]]; then
+				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
+			fi
+			
+			yum remove -y "${package}" || {
+				logger::error "Failed to uninstall ${package}"
+				return 1
+			}
+
+			# Purge
+			if [[ -n "${config_files}" ]]; then
+				echo "${config_files}" | while IFS= read -r file; do
+					if [[ -f "${file}" || -d "${file}" ]]; then
+						rm -rf "${file}" || logger::warning "Failed to remove ${file}"
+					fi
+				done
+			fi
+			
+			yum autoremove -y || logger::warning "yum autoremove failed"
+			yum clean all || logger::warning "yum clean failed"
+			;;
+		pacman)
+			if [[ ${purge} -eq 1 ]]; then
+				pacman -Rns --noconfirm "${package}" || {
+					logger::error "Failed to purge ${package}"
+					return 1
+				}
+			else
+				pacman -Rs --noconfirm "${package}" || {
+					logger::error "Failed to uninstall ${package}"
+					return 1
+				}
+			fi
+
+			# Clean package cache
+			if [[ ${purge} -eq 1 ]]; then
+				pacman -Sc --noconfirm || logger::warning "pacman cache clean failed"
+			fi
+			;;
+		yay)
+			if [[ ${purge} -eq 1 ]]; then
+				yay -Rns --noconfirm "${package}" || {
+					logger::error "Failed to purge ${package}"
+					return 1
+				}
+			else
+				yay -Rs --noconfirm "${package}" || {
+					logger::error "Failed to uninstall ${package}"
+					return 1
+				}
+			fi
+		
+			# Clean cache
+			yay -Sc --noconfirm || logger::warning "yay cache clean failed"
+			;;
+		apk)
+			if [[ ${purge} -eq 1 ]]; then
+				apk del --purge "${package}" || {
+				logger::error "Failed to purge ${package}"
+				return 1
+			}
+			else
+				apk del "${package}" || {
+					logger::error "Failed to uninstall ${package}"
+					return 1
+				}
+			fi
+			
+			# Clean cache
+			apk cache clean || logger::warning "apk cache clean failed"
+			;;
+		snap)
+			packaging::_check_snap || return 1
+			
+			if [[ ${purge} -eq 1 ]]; then
+				snap remove --purge "${package}" || {
+					logger::error "Failed to purge snap ${package}"
+					return 1
+				}
+			else
+				snap remove "${package}" || {
+					logger::error "Failed to uninstall snap ${package}"
+					return 1
+				}
+			fi
+			;;
+		flatpak)
+			packaging::_check_flatpak || return 1
+			
+			flatpak uninstall -y "${package}" || {
+				logger::error "Failed to uninstall flatpak ${package}"
+				return 1
+			}
+			
+			if [[ ${purge} -eq 1 ]]; then		
+				flatpak uninstall --delete-data -y "${package}" 2>/dev/null || true
+				
+				# Remove unused runtimes and dependencies
+				flatpak uninstall --unused --delete-data -y || logger::warning "flatpak cleanup failed"
+				
+				# Repair and prune repo
+				flatpak repair --user || logger::warning "flatpak repair failed"
+			fi
+			;;
+		*)
+			logger::error "Unsupported package manager: ${manager}"
+			return 1
+			;;
+	esac
+	
+	logger::info "Successfully uninstalled ${package}"
 	return 0
 }
 
@@ -283,10 +461,12 @@ packaging::update() {
 	esac
 
 	if sysinfo::has_cmd "snap"; then
+		logger::debug "Refreshing snaps"
 		snap refresh || logger::warning "snap refresh failed"
 	fi
 
 	if sysinfo::has_cmd "flatpak"; then
+		logger::debug "Updating flatpak packages"
 		flatpak update -y || logger::warning "flatpak update failed"
 	fi
 
