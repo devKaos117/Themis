@@ -10,12 +10,18 @@ IFS=$'\n\t'        # Safer field splitting
 readonly SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 readonly LIB_DIR="${SCRIPT_DIR}/lib"
 readonly CONFIG_DIR="${SCRIPT_DIR}/config"
-readonly LOG_DIR="${SCRIPT_DIR}/logs"
+readonly LOG_DIR="${SCRIPT_DIR}/log"
 
 # Source core libraries
 source "${LIB_DIR}/logger.sh"
 source "${LIB_DIR}/sysinfo.sh"
-# source "${LIB_DIR}/config.sh"
+source "${LIB_DIR}/config.sh"
+source "${LIB_DIR}/packaging.sh"
+
+# Configure logger
+LOG_DIRECTORY="${LOG_DIR}"
+LOG_CONSOLE_LEVEL=${LOG_DEBUG}
+LOG_FILE_LEVEL=${LOG_NOTSET}
 
 # Initialize logger
 logger::init

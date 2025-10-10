@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Module: logger
-# Description: Comprehensive logging system with levels, colors, and file output
+# Description: Logging system with levels, colors, and file output
 # Dependencies: none
 
 if [[ "${__LOGGER_LOADED__:-0}" -eq 1 ]]; then
@@ -15,7 +15,7 @@ readonly __LOGGER_LOADED__=1
 # 
 # Initialize:
 #	source lib/logger.sh
-#	LOG_DIRECTORY="./logs"
+#	LOG_DIRECTORY="./log"
 #	LOG_CONSOLE_LEVEL=${LOG_INFO}
 #	LOG_FILE_LEVEL=${LOG_DEBUG}
 #	logger::init
@@ -73,8 +73,8 @@ declare -gA __LOG_COLORS=(
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-declare -g LOG_CONSOLE_LEVEL=${LOG_INFO}
-declare -g LOG_FILE_LEVEL=${LOG_DEBUG}
+declare -g LOG_CONSOLE_LEVEL=${LOG_NOTSET}
+declare -g LOG_FILE_LEVEL=${LOG_NOTSET}
 declare -g LOG_COLORIZE=1
 declare -g LOG_FILE=""
 declare -g LOG_DIRECTORY=""

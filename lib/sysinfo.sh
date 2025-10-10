@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Module: sysinfo
-# Description: Comprehensive system detection and capability checking
+# Description: System detection and capability checking
 # Dependencies: logger.sh
 
 if [[ "${__SYSINFO_LOADED__:-0}" -eq 1 ]]; then
@@ -49,10 +49,6 @@ declare -g SYS_HAS_NETWORK=0		# Network connectivity
 declare -g SYS_IS_ROOT=0			# Running as root
 
 # Capability flags
-declare -g SYS_HAS_SYSTEMCTL=0
-declare -g SYS_HAS_APT=0
-declare -g SYS_HAS_DNF=0
-declare -g SYS_HAS_PACMAN=0
 declare -g SYS_HAS_GIT=0
 
 # ============================================================================
@@ -118,19 +114,16 @@ _sysinfo::detect_arch() {
 }
 
 _sysinfo::detect_package_manager() {
-	if command -v apt-get &> /dev/null; then
+	if command -v apt &> /dev/null; then
 		PACKAGER="apt"
-		SYS_HAS_APT=1
 	elif command -v dnf &> /dev/null; then
 		PACKAGER="dnf"
-		SYS_HAS_DNF=1
 	elif command -v yum &> /dev/null; then
 		PACKAGER="yum"
 	elif command -v pacman &> /dev/null; then
 		PACKAGER="pacman"
-		SYS_HAS_PACMAN=1
-	elif command -v zypper &> /dev/null; then
-		PACKAGER="zypper"
+	elif command -v yay &> /dev/null; then
+		PACKAGER="yay"
 	elif command -v apk &> /dev/null; then
 		PACKAGER="apk"
 	else
@@ -144,7 +137,6 @@ _sysinfo::detect_package_manager() {
 _sysinfo::detect_init_system() {
 	if [[ -d /run/systemd/system ]]; then
 		SYS_INIT_SYSTEM="systemd"
-		SYS_HAS_SYSTEMCTL=1
 	elif [[ -f /sbin/openrc ]]; then
 		SYS_INIT_SYSTEM="openrc"
 	elif [[ -f /sbin/init && ! -L /sbin/init ]]; then
@@ -214,10 +206,6 @@ _sysinfo::detect_privileges() {
 	fi
 }
 
-_sysinfo::detect_common_tools() {
-	command -v git &> /dev/null && SYS_HAS_GIT=1
-}
-
 # ============================================================================
 # PUBLIC API
 # ============================================================================
@@ -234,7 +222,6 @@ sysinfo::detect_all() {
 	_sysinfo::detect_live_environment
 	_sysinfo::detect_virtualization
 	_sysinfo::detect_network
-	_sysinfo::detect_common_tools
 	
 	logger::info "System detection complete"
 }
@@ -282,4 +269,8 @@ sysinfo::is_arch_based() {
 
 sysinfo::is_redhat_based() {
 	[[ "${SYS_OS_LIKE}" =~ (rhel|fedora) ]] && return 0 || return 1
+}
+
+sysinfo::has_cmd() {
+	command -v ${1} &> /dev/null
 }
