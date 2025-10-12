@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Module: sysinfo
 # Description: System detection and capability checking

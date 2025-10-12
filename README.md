@@ -25,6 +25,7 @@ zsh
 alacritty*
 
 vscode*
+git # git config --global init.defaultBranch master, git config --global user.name, git config --global user.email
 gcc
 rust
 python3
@@ -72,21 +73,18 @@ virt-v2v -> OVA to QCOW2
 /etc/sudoers
 /etc/fstab
 
-check for RPM Fusion
+check for fedora RPM Fusion
 Nvidia or AMD GPU and drivers
 Show errors and warnings
 
+xfce panel profile
+desktop and workspace
+themes with openRGB
+keyboard and keyboard shortcurts
+home custom dirs
+numpad and touchpad
 
-
-
-
-kali live:
-	desktop
-	panel profile
-	workspaces
-	keyboard
-	touchpad
-	kali tweaks
+kali tweaks
 
 ### Features <a name = "about-features"></a>
 
@@ -111,7 +109,9 @@ Themis/
 │	└── sysinfo.sh
 ├── log/
 │	└── yyyy-MM-ddThh-mm-ss.log
-├── profiles
+├── profiles/
+│	└── <...>
+├── themes/
 │	└── <...>
 ├── LICENSE
 ├── README.md

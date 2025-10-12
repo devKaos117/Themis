@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Module: logger
 # Description: Logging system with levels, colors, and file output

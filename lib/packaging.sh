@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Module: packaging
 # Description: Package managing tools and utilities
