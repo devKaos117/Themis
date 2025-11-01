@@ -43,6 +43,9 @@ bpytop
 rclone
 
 brave*
+discord
+obsidian
+gimp
 vlc
 ranger
 trash-cli
@@ -50,12 +53,13 @@ LibreOffice
 qbittorrent
 7z
 libavcodec-freeworld
+openrgb -> Effects plugin
 
 texlive-all -> (minify) latexmk pdflatex texlive-lastpage texlive-fancyhdr texlive-multirow texlive-enumitem texlive-mathtools texlive-amsfonts texlive-hyperref texlive-titlesec texlive-tkz-euclide
 
 
 *virt*
-
+virtualbox
 
 sudo dnf install qemu-kvm libvirt virt-install virt-manager virt-viewer edk2-ovmf swtpm qemu-img guestfs-tools libosinfo tuned
 
@@ -79,12 +83,36 @@ Show errors and warnings
 
 xfce panel profile
 desktop and workspace
-themes with openRGB
 keyboard and keyboard shortcurts
 home custom dirs
 numpad and touchpad
-
+energy settings
+keep awake mode (for long processes)
 kali tweaks
+
+openRGB
+
+install i2c-tools
+modprobe i2c-piix4
+echo "i2c-piix4" | sudo tee /etc/modules-load.d/i2c-piix4.conf
+echo "i2c-i801"
+
+/etc/udev/rules.d/60-openrgb.rules
+/usr/lib/udev/rules.d/60-openrgb.rules
+
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+/etc/systemd/system/openrgb.service
+systemctl enable openrgb.service
+
+sudo useradd --system -g i2c -s /sbin/nologin -c "OpenRGB Service User" --no-create-home openrgb
+
+sudo mkdir -p /etc/openrgb
+sudo chown -R openrgb:i2c /etc/openrgb
+
+
+sudo usermod -aG i2c kaos
 
 ### Features <a name = "about-features"></a>
 
