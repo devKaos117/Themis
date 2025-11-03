@@ -21,7 +21,7 @@ uname to differ from offsec to personal env (kali or fedora/arch)
 
 update
 
-zsh
+zsh -> zsh-autosuggestions zsh-syntax-highlighting
 alacritty*
 
 vscode*
