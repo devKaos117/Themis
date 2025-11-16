@@ -52,7 +52,7 @@ declare -g SYS_IS_ROOT=0			# Running as root
 declare -g SYS_HAS_GIT=0
 
 # ============================================================================
-# PRIVATE DETECTION FUNCTIONS
+# PRIVATE FUNCTIONS
 # ============================================================================
 
 _sysinfo::detect_os() {
@@ -84,7 +84,7 @@ _sysinfo::detect_os() {
             SYS_OS_CODENAME="unknown"
         fi
         
-        logger::debug "OS detected: ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
+        logger::debug "OS: ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
 	elif [[ -f /etc/lsb-release ]]; then
 		source /etc/lsb-release # Parse /etc/lsb-release
         SYS_OS="${DISTRIB_ID,,}"  # lowercase
@@ -92,7 +92,7 @@ _sysinfo::detect_os() {
         SYS_OS_VERSION="${DISTRIB_RELEASE:-unknown}"
         SYS_OS_CODENAME="${DISTRIB_CODENAME:-unknown}"
 
-		logger::debug "OS detected via LSB: ${SYS_OS} ${SYS_OS_VERSION}"
+		logger::debug "OS (LSB): ${SYS_OS} ${SYS_OS_VERSION}"
 	else
 		logger::warning "Could not detect OS via standard methods"
         SYS_OS="unknown"
