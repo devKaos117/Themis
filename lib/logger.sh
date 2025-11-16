@@ -55,13 +55,13 @@ declare -r -A _LOG_LEVEL_NAMES=(
 declare -r _TIMESTAMP_FORMAT="%H:%M:%S.%3N"
 
 declare -r -A _LOG_COLORS=(
-	[99]="\033[0m"		# Reset
-	[50]="\033[95m"		# Magenta
-	[40]="\033[91m"		# Red
-	[30]="\033[93m"		# Orange
-	[20]="\033[92m"		# Green
-	[10]="\033[94m"		# Blue
-	[0]="\033[36m"		# Cyan
+	[99]="\033[0m"			# Reset
+	[50]="\033[1;95m"		# Magenta
+	[40]="\033[1;91m"		# Red
+	[30]="\033[1;93m"		# Orange
+	[20]="\033[1;92m"		# Green
+	[10]="\033[1;94m"		# Blue
+	[0]="\033[96m"			# Cyan
 )
 
 # ============ Default configuration values
@@ -128,7 +128,7 @@ _logger::log() {
 	# Format message
 	if [[ $COLORIZE_MESSAGE = true ]]; then
 		# Colorized output
-		formatted_msg="[${_LOG_COLORS[0]}${timestamp}${_LOG_COLORS[99]}] [${_LOG_COLORS[0]}${call_info}${_LOG_COLORS[99]}] [${_LOG_COLORS[$log_level]}${log_name}${_LOG_COLORS[99]}] $message"
+		formatted_msg="[${_LOG_COLORS[0]}${timestamp}${_LOG_COLORS[99]}] [${_LOG_COLORS[0]}${call_info}${_LOG_COLORS[99]}] [${_LOG_COLORS[$log_level]}${log_name}${_LOG_COLORS[99]}] \033[1m$message${_LOG_COLORS[99]}"
 	else
 		formatted_msg="[${timestamp}] [${call_info}] [${log_name}] $message"
 	fi
