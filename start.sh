@@ -7,31 +7,21 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 IFS=$'\n\t'        # Safer field splitting
 
 # Script directory detection
-readonly SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-readonly LIB_DIR="${SCRIPT_DIR}/lib"
-readonly CONFIG_DIR="${SCRIPT_DIR}/config"
-readonly LOG_DIR="${SCRIPT_DIR}/log"
+declare -r _SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+declare -r _CONFIG_DIR="${_SCRIPT_DIR}/config"
+declare -r _LIB_DIR="${_SCRIPT_DIR}/lib"
+declare -r _PROFILE_DIR="${_SCRIPT_DIR}/profiles"
+declare -r _THEME_DIR="${_SCRIPT_DIR}/themes"
 
 # Source core libraries
-source "${LIB_DIR}/logger.sh"
-source "${LIB_DIR}/sysinfo.sh"
-source "${LIB_DIR}/config.sh"
-source "${LIB_DIR}/packaging.sh"
+source "${_LIB_DIR}/logger.sh"
+source "${_LIB_DIR}/sysinfo.sh"
+source "${_LIB_DIR}/config.sh"
+source "${_LIB_DIR}/packaging.sh"
 
 # Configure logger
-LOG_DIRECTORY="${LOG_DIR}"
-LOG_CONSOLE_LEVEL=${LOG_DEBUG}
-LOG_FILE_LEVEL=${LOG_NOTSET}
-
-# Initialize logger
-logger::init
-
-# Setup error handling
-logger::setup_error_trap
-
-# cleanup() {
-#     ...
-# }
+LOG_LEVEL=${LOG_DEBUG}
+COLORIZE_MESSAGE=true
 
 # Main execution
 main() {
@@ -39,7 +29,7 @@ main() {
     sysinfo::detect_all
 	sysinfo::print_summary
 
-    packaging::uninstall Nucleus flatpak 1
+    # packaging::uninstall Nucleus flatpak 1
 
 	logger::info "Done"
 }

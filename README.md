@@ -52,6 +52,7 @@ trash-cli
 LibreOffice
 qbittorrent
 7z
+ascii
 libavcodec-freeworld
 openrgb -> Effects plugin
 

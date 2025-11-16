@@ -252,8 +252,13 @@ alias grep='grep --color=auto'
 alias diff='diff --color=auto'
 alias ip='ip --color=auto'
 #--- Custom commands and functions
+#--- Quick git push
 git_push() {
 	git add . && git commit -m "${1}" && git push origin main
 }
+#--- Data encoding
+alias enCode='xxd -p | base64'
+alias deCode='base64 -d | xxd -r -p'
+
 #--- Random Shit
 alias cafe='while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe"'

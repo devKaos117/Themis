@@ -12,7 +12,7 @@ readonly __CONFIG_LOADED__=1
 # ============================================================================
 # CONFIGURATION STORAGE
 # ============================================================================
-declare -g CONFIG_FILE="${CONFIG_DIR}/themis.conf"
+declare -g CONFIG_FILE="${_CONFIG_DIR}/themis.conf"
 
 # ============================================================================
 # PRIVATE FUNCTIONS
@@ -32,7 +32,7 @@ _config::load_file() {
 _config::save_file() {
 	logger::debug "Saving configuration to ${CONFIG_FILE}"
 	
-	mkdir -p "${CONFIG_DIR}" # Create config directory if it doesn't exist
+	mkdir -p "${_CONFIG_DIR}" # Create config directory if it doesn't exist
 	
 	{
 		echo "# Themis Configuration File"
