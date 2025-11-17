@@ -68,7 +68,7 @@ packaging::_is_installed() {
 	if [[ "${manager}" == "auto" ]]; then
 		manager="${PACKAGER}"
 	fi
-	
+
 	case "${manager}" in
 		apt)
 			dpkg -l "${package}" 2>/dev/null | grep -q "^ii"
@@ -103,7 +103,7 @@ packaging::_is_installed() {
 packaging::_is_available() {
 	local pkg="$1"
 	local manager="${2:-auto}" # auto, apt, dnf, yum, pacman, yay, apk, snap, flatpak
-	
+
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
 		manager="${PACKAGER}"
@@ -150,17 +150,17 @@ packaging::_is_available() {
 packaging::install() {
 	local package="$1"
 	local manager="${2:-auto}" # auto, apt, dnf, pacman, snap, flatpak
-	
+
 	logger::debug "Installing package (${manager}): ${package}"
-	
+
 	sysinfo::require_root || return 1
 	sysinfo::require_network || return 1
-	
+
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
 		manager="${PACKAGER}"
 	fi
-	
+
 	if packaging::_is_installed "${package}" "${manager}"; then
 		logger::debug "Package '${package}' already installed"
 		return 0
@@ -172,7 +172,7 @@ packaging::install() {
 	fi
 
 	case "${manager}" in
-		apt)	
+		apt)
 			apt install -y "${package}" || {
 				logger::error "Failed to install ${package}"
 				return 1
@@ -236,16 +236,16 @@ packaging::uninstall() {
 	local package="$1"
 	local manager="${2:-auto}" # auto, apt, dnf, pacman, snap, flatpak
 	local purge="${3:-0}" # 1=purge, 0=keep configs
-	
+
 	logger::debug "Uninstalling $(if [[ ${purge} -eq 1 ]] ;then echo "(purge)"; fi) package (${manager}): ${package}"
-	
+
 	sysinfo::require_root || return 1
-	
+
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
 		manager="${PACKAGER}"
 	fi
-	
+
 	if ! packaging::_is_installed "${package}" "${manager}"; then
 		logger::debug "Package '${package}' is not installed"
 		return 0
@@ -279,7 +279,7 @@ packaging::uninstall() {
 				logger::error "Failed to uninstall ${package}"
 				return 1
 			}
-			
+
 			# Purge
 			if [[ -n "${config_files}" ]]; then
 				echo "${config_files}" | while IFS= read -r file; do
@@ -299,7 +299,7 @@ packaging::uninstall() {
 			if [[ ${purge} -eq 1 ]]; then
 				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
 			fi
-			
+
 			yum remove -y "${package}" || {
 				logger::error "Failed to uninstall ${package}"
 				return 1
@@ -313,7 +313,7 @@ packaging::uninstall() {
 					fi
 				done
 			fi
-			
+
 			yum autoremove -y || logger::warning "yum autoremove failed"
 			yum clean all || logger::warning "yum clean failed"
 			;;
@@ -347,7 +347,7 @@ packaging::uninstall() {
 					return 1
 				}
 			fi
-		
+
 			# Clean cache
 			yay -Sc --noconfirm || logger::warning "yay cache clean failed"
 			;;
@@ -363,13 +363,13 @@ packaging::uninstall() {
 					return 1
 				}
 			fi
-			
+
 			# Clean cache
 			apk cache clean || logger::warning "apk cache clean failed"
 			;;
 		snap)
 			packaging::_check_snap || return 1
-			
+
 			if [[ ${purge} -eq 1 ]]; then
 				snap remove --purge "${package}" || {
 					logger::error "Failed to purge snap ${package}"
@@ -384,18 +384,18 @@ packaging::uninstall() {
 			;;
 		flatpak)
 			packaging::_check_flatpak || return 1
-			
+
 			flatpak uninstall -y "${package}" || {
 				logger::error "Failed to uninstall flatpak ${package}"
 				return 1
 			}
-			
-			if [[ ${purge} -eq 1 ]]; then		
+
+			if [[ ${purge} -eq 1 ]]; then
 				flatpak uninstall --delete-data -y "${package}" 2>/dev/null || true
-				
+
 				# Remove unused runtimes and dependencies
 				flatpak uninstall --unused --delete-data -y || logger::warning "flatpak cleanup failed"
-				
+
 				# Repair and prune repo
 				flatpak repair --user || logger::warning "flatpak repair failed"
 			fi
@@ -405,7 +405,7 @@ packaging::uninstall() {
 			return 1
 			;;
 	esac
-	
+
 	logger::info "Successfully uninstalled ${package}"
 	return 0
 }

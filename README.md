@@ -29,6 +29,7 @@ git # git config --global init.defaultBranch master, git config --global user.na
 gcc
 rust
 python3
+powershell
 
 neovim
 bat

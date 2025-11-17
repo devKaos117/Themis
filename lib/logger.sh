@@ -2,12 +2,12 @@
 #
 # Module: logger
 # Description: Centralized module for terminal logging with levels and a custom format
-# Dependencies: 
+# Dependencies:
 
 # ============================================================================
 # USAGE
 # ============================================================================
-# 
+#
 # ============ Initialize:
 #	source lib/logger.sh
 #	LOG_LEVEL=${LOG_INFO}
@@ -26,7 +26,7 @@
 
 # ============ Avoid loading the module twice
 if [[ "${_LOGGER_LOADED:-0}" -eq 1 ]]; then
-    return 0
+	return 0
 fi
 readonly _LOGGER_LOADED=1
 
@@ -86,7 +86,7 @@ _logger::get_call_info() {
 	# Find caller function skipping internal logger
 	frame=1
 	caller_func="${FUNCNAME[$frame]}"
-	
+
 	while [[ "$caller_func" =~ ^_?logger:: ]]; do
 		((frame++))
 		caller_func="${FUNCNAME[$frame]:-main}"
@@ -113,10 +113,10 @@ _logger::log() {
 	# ============ Function parameters
 	log_level="$1"
 	message="$2"
-	
+
 	# ============ Main logic
 	# Check log level
-	if [[ ${log_level} -lt ${LOG_LEVEL} ]]; then 
+	if [[ ${log_level} -lt ${LOG_LEVEL} ]]; then
 		return 0;
 	fi
 
@@ -124,7 +124,7 @@ _logger::log() {
 	timestamp="$(date +"${_TIMESTAMP_FORMAT}")"
 	log_name="${_LOG_LEVEL_NAMES[$log_level]}"
 	call_info="$(_logger::get_call_info)"
-	
+
 	# Format message
 	if [[ $COLORIZE_MESSAGE = true ]]; then
 		# Colorized output
@@ -132,7 +132,7 @@ _logger::log() {
 	else
 		formatted_msg="[${timestamp}] [${call_info}] [${log_name}] $message"
 	fi
-	
+
 
 	# Console output
 	echo -e "$formatted_msg" >&2

@@ -5,7 +5,7 @@
 # Dependencies: logger.sh
 
 if [[ "${__SYSINFO_LOADED__:-0}" -eq 1 ]]; then
-    return 0
+	return 0
 fi
 readonly __SYSINFO_LOADED__=1
 
@@ -14,7 +14,7 @@ readonly __SYSINFO_LOADED__=1
 # ============================================================================
 #
 # source lib/sysinfo.sh
-# 
+#
 # # Detect everything
 # sysinfo::detect_all
 # sysinfo::print_summary
@@ -57,48 +57,48 @@ declare -g SYS_HAS_GIT=0
 
 _sysinfo::detect_os() {
 	if [[ -f /etc/os-release ]]; then
-        source /etc/os-release # Parse /etc/os-release
-        
-        SYS_OS="${ID}"
-        SYS_OS_LIKE="${ID_LIKE:-${ID}}"
-        
-        # Version detection with fallbacks
-        if [[ -n "${VERSION_ID:-}" ]]; then
-            SYS_OS_VERSION="${VERSION_ID}"
-        elif [[ -n "${VARIANT_ID:-}" ]]; then
-            SYS_OS_VERSION="${VARIANT_ID}"
-        elif [[ -n "${BUILD_ID:-}" ]]; then
-            SYS_OS_VERSION="${BUILD_ID}"
-        else
-            SYS_OS_VERSION="rolling"
-        fi
-        
-        # Codename detection with fallbacks
-        if [[ -n "${VERSION_CODENAME:-}" ]]; then
-            SYS_OS_CODENAME="${VERSION_CODENAME}"
-        elif [[ -n "${VARIANT:-}" ]]; then
-            SYS_OS_CODENAME="${VARIANT}"
-        elif [[ -n "${VERSION:-}" ]]; then
-            SYS_OS_CODENAME=$(echo "${VERSION}" | grep -oP '\(\K[^)]+' || echo "unknown")
-        else
-            SYS_OS_CODENAME="unknown"
-        fi
-        
-        logger::debug "OS: ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
+		source /etc/os-release # Parse /etc/os-release
+
+		SYS_OS="${ID}"
+		SYS_OS_LIKE="${ID_LIKE:-${ID}}"
+
+		# Version detection with fallbacks
+		if [[ -n "${VERSION_ID:-}" ]]; then
+			SYS_OS_VERSION="${VERSION_ID}"
+		elif [[ -n "${VARIANT_ID:-}" ]]; then
+			SYS_OS_VERSION="${VARIANT_ID}"
+		elif [[ -n "${BUILD_ID:-}" ]]; then
+			SYS_OS_VERSION="${BUILD_ID}"
+		else
+			SYS_OS_VERSION="rolling"
+		fi
+
+		# Codename detection with fallbacks
+		if [[ -n "${VERSION_CODENAME:-}" ]]; then
+			SYS_OS_CODENAME="${VERSION_CODENAME}"
+		elif [[ -n "${VARIANT:-}" ]]; then
+			SYS_OS_CODENAME="${VARIANT}"
+		elif [[ -n "${VERSION:-}" ]]; then
+			SYS_OS_CODENAME=$(echo "${VERSION}" | grep -oP '\(\K[^)]+' || echo "unknown")
+		else
+			SYS_OS_CODENAME="unknown"
+		fi
+
+		logger::debug "OS: ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
 	elif [[ -f /etc/lsb-release ]]; then
 		source /etc/lsb-release # Parse /etc/lsb-release
-        SYS_OS="${DISTRIB_ID,,}"  # lowercase
-        SYS_OS_LIKE="${SYS_OS}"
-        SYS_OS_VERSION="${DISTRIB_RELEASE:-unknown}"
-        SYS_OS_CODENAME="${DISTRIB_CODENAME:-unknown}"
+		SYS_OS="${DISTRIB_ID,,}" # lowercase
+		SYS_OS_LIKE="${SYS_OS}"
+		SYS_OS_VERSION="${DISTRIB_RELEASE:-unknown}"
+		SYS_OS_CODENAME="${DISTRIB_CODENAME:-unknown}"
 
 		logger::debug "OS (LSB): ${SYS_OS} ${SYS_OS_VERSION}"
 	else
 		logger::warning "Could not detect OS via standard methods"
-        SYS_OS="unknown"
-        SYS_OS_LIKE="unknown"
-        SYS_OS_VERSION="unknown"
-        SYS_OS_CODENAME="unknown"
+		SYS_OS="unknown"
+		SYS_OS_LIKE="unknown"
+		SYS_OS_VERSION="unknown"
+		SYS_OS_CODENAME="unknown"
 
 	fi
 }
@@ -144,14 +144,14 @@ _sysinfo::detect_init_system() {
 	else
 		SYS_INIT_SYSTEM="unknown"
 	fi
-	
+
 	logger::debug "Init system: ${SYS_INIT_SYSTEM}"
 }
 
 _sysinfo::detect_live_environment() {
 	# Check common live boot indicators
 	logger::debug "Looking for live environment indicators"
-	
+
 	if grep -q "boot=live" /proc/cmdline 2>/dev/null || grep -q "live" /proc/cmdline 2>/dev/null || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
 		SYS_IS_LIVE=1
 		logger::debug "Live environment detected"
@@ -175,7 +175,7 @@ _sysinfo::detect_virtualization() {
 			logger::debug "VM detected: $product_name"
 		fi
 	fi
-	
+
 	# Check if running in container
 	logger::debug "Looking for containerized environment indicators"
 
@@ -222,7 +222,7 @@ sysinfo::detect_all() {
 	_sysinfo::detect_live_environment
 	_sysinfo::detect_virtualization
 	_sysinfo::detect_network
-	
+
 	logger::info "System detection complete"
 }
 
@@ -231,16 +231,16 @@ sysinfo::print_summary() {
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	echo "System Information"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	echo "OS:               ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
-	echo "Kernel:           ${SYS_KERNEL}"
-	echo "Architecture:     ${SYS_ARCH}"
-	echo "Package Manager:  ${PACKAGER}"
-	echo "Init System:      ${SYS_INIT_SYSTEM}"
-	echo "Live Environment: $([[ ${SYS_IS_LIVE} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Virtual Machine:  $([[ ${SYS_IS_VM} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Container:        $([[ ${SYS_IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Network:          $([[ ${SYS_HAS_NETWORK} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
-	echo "Running as:       $([[ ${SYS_IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
+	echo "OS:				${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
+	echo "Kernel:			${SYS_KERNEL}"
+	echo "Architecture:		${SYS_ARCH}"
+	echo "Package Manager:	${PACKAGER}"
+	echo "Init System:		${SYS_INIT_SYSTEM}"
+	echo "Live Environment:	$([[ ${SYS_IS_LIVE} -eq 1 ]] && echo 'Yes' || echo 'No')"
+	echo "Virtual Machine:	$([[ ${SYS_IS_VM} -eq 1 ]] && echo 'Yes' || echo 'No')"
+	echo "Container:		$([[ ${SYS_IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
+	echo "Network:			$([[ ${SYS_HAS_NETWORK} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
+	echo "Running as:		$([[ ${SYS_IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 

@@ -31,19 +31,19 @@ _config::load_file() {
 
 _config::save_file() {
 	logger::debug "Saving configuration to ${CONFIG_FILE}"
-	
+
 	mkdir -p "${_CONFIG_DIR}" # Create config directory if it doesn't exist
-	
+
 	{
 		echo "# Themis Configuration File"
 		echo "# Generated on $(date +"%Y-%m-%d %H:%M:%S.%3N")"
 		echo "#\n"
-		
+
 		for key in "${!CONFIG[@]}"; do
 			echo "CONFIG[${key}]=${CONFIG[$key]}"
 		done
 	} > "${CONFIG_FILE}"
-	
+
 	logger::debug "Configuration saved successfully"
 }
 
