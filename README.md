@@ -57,6 +57,11 @@ ascii
 libavcodec-freeworld
 openrgb -> Effects plugin
 
+sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -p nordvpn-gui
+sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)
+
+sudo usermod -aG nordvpn $USER
+
 texlive-all -> (minify) latexmk pdflatex texlive-lastpage texlive-fancyhdr texlive-multirow texlive-enumitem texlive-mathtools texlive-amsfonts texlive-hyperref texlive-titlesec texlive-tkz-euclide
 
 
