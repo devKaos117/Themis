@@ -49,6 +49,7 @@ obsidian
 gimp
 vlc
 ranger
+GNU Midnight Commander
 trash-cli
 LibreOffice
 qbittorrent
@@ -56,6 +57,9 @@ qbittorrent
 ascii
 libavcodec-freeworld
 openrgb -> Effects plugin
+
+sudo dnf copr enable bcotton/cherrytree
+sudo dnf install cherrytree
 
 sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -p nordvpn-gui
 sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)
@@ -85,7 +89,7 @@ virt-v2v -> OVA to QCOW2
 /etc/fstab
 
 check for fedora RPM Fusion
-Nvidia or AMD GPU and drivers
+Nvidia or AMD GPU and drivers -> amd-gpu-firmware rocm
 Show errors and warnings
 
 xfce panel profile
