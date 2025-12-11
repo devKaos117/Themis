@@ -1,11 +1,9 @@
 #!/bin/bash
 #
-# Module: logger
-# Description: Centralized module for terminal logging with levels and a custom format
-# Dependencies:
+# Centralized module for terminal logging
 
 # ============================================================================
-# USAGE
+# USAGE DOCUMENTATION
 # ============================================================================
 #
 # ============ Initialize:
@@ -23,7 +21,6 @@
 # ============================================================================
 # INITIALIZATIONS
 # ============================================================================
-
 # ============ Avoid loading the module twice
 if [[ "${_LOGGER_LOADED:-0}" -eq 1 ]]; then
 	return 0

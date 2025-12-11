@@ -1,30 +1,25 @@
 #!/bin/bash
 #
-# Module: sysinfo
-# Description: System detection and capability checking
+# System information and capability detection module
 # Dependencies: logger.sh
-
-if [[ "${__SYSINFO_LOADED__:-0}" -eq 1 ]]; then
-	return 0
-fi
-readonly __SYSINFO_LOADED__=1
 
 # ============================================================================
 # USAGE DOCUMENTATION
 # ============================================================================
-#
+# ============ Initialize:
 # source lib/sysinfo.sh
 #
-# # Detect everything
+# ============ Basic usage:
+# ====== Detect everything:
 # sysinfo::detect_all
 # sysinfo::print_summary
 #
-# # Check specific conditions
+# ====== Assert root permissions:
 # if sysinfo::require_root; then
 #	 echo "Running as root"
 # fi
 #
-# # Use detection results
+# ====== Use detection results:
 # if sysinfo::is_debian_based; then
 #	 apt-get update
 # elif sysinfo::is_arch_based; then
@@ -32,8 +27,18 @@ readonly __SYSINFO_LOADED__=1
 # fi
 
 # ============================================================================
-# SYSTEM INFORMATION STORAGE
+# INITIALIZATIONS
 # ============================================================================
+# ============ Avoid loading the module twice
+if [[ "${__SYSINFO_LOADED__:-0}" -eq 1 ]]; then
+	return 0
+fi
+readonly __SYSINFO_LOADED__=1
+
+# ============ Safer field splitting
+IFS=$'\n\t'
+
+# ============ System information storage
 declare -g SYS_OS=""				# Operating system ID (ubuntu, debian, arch, etc.)
 declare -g SYS_OS_LIKE=""			# OS family (debian, rhel, arch)
 declare -g SYS_OS_VERSION=""		# OS version
@@ -231,7 +236,7 @@ sysinfo::print_summary() {
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	echo "System Information"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	echo "OS:				${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
+	echo "OS:			${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
 	echo "Kernel:			${SYS_KERNEL}"
 	echo "Architecture:		${SYS_ARCH}"
 	echo "Package Manager:	${PACKAGER}"
@@ -239,7 +244,7 @@ sysinfo::print_summary() {
 	echo "Live Environment:	$([[ ${SYS_IS_LIVE} -eq 1 ]] && echo 'Yes' || echo 'No')"
 	echo "Virtual Machine:	$([[ ${SYS_IS_VM} -eq 1 ]] && echo 'Yes' || echo 'No')"
 	echo "Container:		$([[ ${SYS_IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Network:			$([[ ${SYS_HAS_NETWORK} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
+	echo "Network:		$([[ ${SYS_HAS_NETWORK} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
 	echo "Running as:		$([[ ${SYS_IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
