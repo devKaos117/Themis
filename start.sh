@@ -18,6 +18,7 @@ source "${_LIB_DIR}/logger.sh"
 source "${_LIB_DIR}/sysinfo.sh"
 source "${_LIB_DIR}/config.sh"
 source "${_LIB_DIR}/packaging.sh"
+source "${_LIB_DIR}/chef.sh"
 
 # Configure logger
 LOG_LEVEL=${LOG_DEBUG}
@@ -29,7 +30,7 @@ main() {
     sysinfo::detect_all
 	sysinfo::print_summary
 
-    # packaging::uninstall Nucleus flatpak 1
+	fedora::sources
 
 	logger::info "Done"
 }

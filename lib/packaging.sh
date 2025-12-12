@@ -4,13 +4,20 @@
 # Description: Package managing tools and utilities
 # Dependencies: logger.sh
 
+# ============================================================================
+# INITIALIZATIONS
+# ============================================================================
+# ============ Avoid loading the module twice
 if [[ "${__PACKAGING_LOADED__:-0}" -eq 1 ]]; then
 	return 0
 fi
 readonly __PACKAGING_LOADED__=1
 
+# ============ Safer field splitting
+IFS=$'\n\t'
+
 # ============================================================================
-# PACKAGE MANAGEMENT FUNCTIONS
+# PRIVATE FUNCTIONS
 # ============================================================================
 
 packaging::_check_snap() {
@@ -62,7 +69,7 @@ packaging::_check_flatpak() {
 
 packaging::_is_installed() {
 	local package="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, yum, pacman, yay, apk, snap, flatpak
+	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
 
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
@@ -94,7 +101,7 @@ packaging::_is_installed() {
 			flatpak list | grep -q "${package}"
 			;;
 		*)
-			logger::warning "Cannot check package installation for ${PACKAGER}"
+			logger::warning "Cannot check package installation for ${manager}"
 			return 1
 			;;
 	esac
@@ -102,7 +109,7 @@ packaging::_is_installed() {
 
 packaging::_is_available() {
 	local pkg="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, yum, pacman, yay, apk, snap, flatpak
+	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
 
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
@@ -115,6 +122,15 @@ packaging::_is_available() {
 			;;
 		dnf)
 			dnf info "${pkg}" &>/dev/null
+			;;
+		rpm)
+			if [[ -f "$pkg" ]]; then
+				return 0
+			elif [[ "${pkg}" =~ ^(http|https|ftp):// ]] && sysinfo::require_network ; then
+				return 0
+			else
+				return 1
+			fi
 			;;
 		yum)
 			yum info "${pkg}" &>/dev/null
@@ -149,7 +165,7 @@ packaging::_is_available() {
 
 packaging::install() {
 	local package="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, pacman, snap, flatpak
+	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
 
 	logger::debug "Installing package (${manager}): ${package}"
 
@@ -180,6 +196,12 @@ packaging::install() {
 			;;
 		dnf)
 			dnf install -y "${package}" || {
+				logger::error "Failed to install ${package}"
+				return 1
+			}
+			;;
+		rpm)
+			rpm -U "${package}" || {
 				logger::error "Failed to install ${package}"
 				return 1
 			}
@@ -234,7 +256,7 @@ packaging::install() {
 
 packaging::uninstall() {
 	local package="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, pacman, snap, flatpak
+	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
 	local purge="${3:-0}" # 1=purge, 0=keep configs
 
 	logger::debug "Uninstalling $(if [[ ${purge} -eq 1 ]] ;then echo "(purge)"; fi) package (${manager}): ${package}"
@@ -292,6 +314,27 @@ packaging::uninstall() {
 			# autoremove and clean
 			dnf autoremove -y || logger::warning "dnf autoremove failed"
 			dnf clean all || logger::warning "dnf clean failed"
+			;;
+		rpm)
+			# Fetch config files if configured to purge
+			local config_files
+			if [[ ${purge} -eq 1 ]]; then
+				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
+			fi
+
+			rpm -e "${package}" || {
+				logger::error "Failed to uninstall ${package}"
+				return 1
+			}
+
+			# Purge
+			if [[ -n "${config_files}" ]]; then
+				echo "${config_files}" | while IFS= read -r file; do
+					if [[ -f "${file}" || -d "${file}" ]]; then
+						rm -rf "${file}" || logger::warning "Failed to remove ${file}"
+					fi
+				done
+			fi
 			;;
 		yum)
 			# Fetch config files if configured to purge

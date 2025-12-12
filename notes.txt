@@ -2,112 +2,28 @@ uname to differ from offsec to personal env (kali or fedora/arch)
 
 update
 
-zsh -> zsh-autosuggestions zsh-syntax-highlighting
-alacritty*
-
-vscode*
+code
 git # git config --global init.defaultBranch master, git config --global user.name, git config --global user.email
 gcc
 rust
 python3
 powershell
 
-neovim
-bat
-tldr
-cpufetch
-fastfetch
-
-flatpak
-snapd
-
-bpytop
-rclone
-
-brave*
+brave-browser
 discord
-obsidian
+flathub md.obsidian.Obsidian
 gimp
 vlc
 ranger
-GNU Midnight Commander
-trash-cli
 LibreOffice
 qbittorrent
 7z
-ascii
+rclone
 libavcodec-freeworld
+ffmpeg-free
 openrgb -> Effects plugin
 
-sudo dnf copr enable bcotton/cherrytree
-sudo dnf install cherrytree
-
-sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -p nordvpn-gui
-sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)
-
-sudo usermod -aG nordvpn $USER
-
 texlive-all -> (minify) latexmk pdflatex texlive-lastpage texlive-fancyhdr texlive-multirow texlive-enumitem texlive-mathtools texlive-amsfonts texlive-hyperref texlive-titlesec texlive-tkz-euclide
-
-*specific*
---- brave (https://brave.com/linux/) (curl -fsS https://dl.brave.com/install.sh | sh)
-sudo dnf install dnf-plugins-core
-sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-sudo dnf install brave-browser
-
---- powershell (https://learn.microsoft.com/pt-br/powershell/scripting/install/install-rhel?view=powershell-7.5)
-curl -sSL -O https://packages.microsoft.com/config/rhel/$majorver/packages-microsoft-prod.rpm # ADAPT VERSION
-sudo rpm -i packages-microsoft-prod.rpm
-rm packages-microsoft-prod.rpm
-sudo dnf update && sudo dnf install powershell -y
-
---- vscode (https://code.visualstudio.com/docs/setup/linux)
-sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
-sudo dnf install code
-
---- discord
-FEDORA RPM
-sudo dnf install discord
-
---- obsidian
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo # FLATPAK CONFIGURATION
-sudo flatpak install flathub md.obsidian.Obsidian
-
---- libavcodec-freeworld
-FEDORA RPM
-libavcodec-freeworld ffmpeg-free
-
---- cherrytree
-CHECK ABOVE
-
---- latex
-sudo dnf install texlive-scheme-full
-# review latex configs
-
---- virtualbox
-FEDORA RPM
-sudo dnf install virtualbox
-sudo dnf install akmod-VirtualBox kernel-devel-$(uname -r)
-sudo akmods; sudo systemctl restart vboxdrv.service
-
---- RPM Fusion
-sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-sudo dnf install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-
-*virt*
-virtualbox
-
-sudo dnf install qemu-kvm libvirt virt-install virt-manager virt-viewer edk2-ovmf swtpm qemu-img guestfs-tools libosinfo tuned
-
-for drv in qemu interface network nodedev nwfilter secret storage; do \
-	sudo systemctl enable virt${drv}d.service; \
-	sudo systemctl enable virt${drv}d{,-ro,-admin}.socket; \
-done
-
-sudo virt-host-validate qemu
-
-virt-v2v -> OVA to QCOW2
 
 
 
@@ -147,6 +63,5 @@ sudo useradd --system -g i2c -s /sbin/nologin -c "OpenRGB Service User" --no-cre
 
 sudo mkdir -p /etc/openrgb
 sudo chown -R openrgb:i2c /etc/openrgb
-
 
 sudo usermod -aG i2c kaos
