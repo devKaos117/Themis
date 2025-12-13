@@ -472,6 +472,10 @@ packaging::update() {
 			apt autoremove -y || logger::warning "apt autoremove failed"
 			;;
 		dnf)
+			dnf update -y || {
+				logger::error "dnf update failed"
+				return 1
+			}
 			dnf upgrade -y || {
 				logger::error "dnf upgrade failed"
 				return 1

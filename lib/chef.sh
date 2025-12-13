@@ -25,6 +25,7 @@ fedora::sources() {
 	# ====== RPM Fusion
 	packaging::install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 	packaging::install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+	dnf config-manager setopt fedora-cisco-openh264.enabled=1
 	# ====== Brave
 	# https://brave.com/linux/
 	if [[ ! -f "/etc/yum.repos.d/brave-browser.repo" ]]; then
@@ -69,11 +70,15 @@ fedora::cli() {
 }
 
 fedora::gaming() {
-
+	packaging::install steam
 }
 
 fedora::gpu() {
-
+	dnf swap mesa-va-drivers mesa-va-drivers-freeworld && dnf swap mesa-vdpau-drivers mesa-vdpau-drivers-freeworld
+	sudo dnf copr enable ilyaz/LACT # Check AMD OC
+	packaging::install vulkan-tools
+	packaging::install radeontop
+	packaging::install lact && sudo systemctl enable --now lactd
 }
 
 fedora::virt() {
