@@ -1,5 +1,11 @@
 uname to differ from offsec to personal env (kali or fedora/arch)
 
+kali
+	seclist
+	chisel-binaries
+	ligolo-ng
+	zaproxy
+
 update
 
 code
