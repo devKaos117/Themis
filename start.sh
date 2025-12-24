@@ -30,7 +30,18 @@ main() {
     sysinfo::detect_all
 	sysinfo::print_summary
 
-	fedora::sources
+	# fedora::sources
+	# fedora::cli
+	# fedora::virt
+	# fedora::gpu
+	# fedora::gaming
+	# all::vpn
+	# fedora::dev
+	# fedora::general
+	# fedora::media
+	# fedora::vpn
+	# fedora::texlive
+	# fedora::browsers
 
 	logger::info "Done"
 }

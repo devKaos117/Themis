@@ -30,7 +30,7 @@ packaging::_check_snap() {
 	# Check if snapd service is running
 	if ! systemctl is-active --quiet snapd.socket; then
 		logger::debug "Starting snapd service"
-		systemctl enable --now snapd.socket || {
+		systemctl enable --now snapd.socket 1>  /dev/null || {
 			logger::error "Failed to start snapd service"
 			return 1
 		}
@@ -39,7 +39,7 @@ packaging::_check_snap() {
 	# Create classic snap symlink if needed
 	if [[ ! -L /snap ]]; then
 		logger::debug "Creating /snap symlink"
-		ln -s /var/lib/snapd/snap /snap || {
+		ln -s /var/lib/snapd/snap /snap 1>  /dev/null || {
 			logger::error "Failed to create /snap symlink"
 			return 1
 		}
@@ -58,7 +58,7 @@ packaging::_check_flatpak() {
 	# Add flathub repository if not already added
 	if ! flatpak remote-list | grep -q flathub; then
 		logger::debug "Adding flathub repository"
-		flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || {
+		flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 1> /dev/null || {
 			logger::error "Failed to add flathub repository"
 			return 1
 		}
@@ -98,7 +98,7 @@ packaging::_is_installed() {
 			;;
 		flatpak)
 			packaging::_check_flatpak || return 1
-			flatpak list | grep -q "${package}"
+			flatpak list 2> /dev/null | grep -q "${package}"
 			;;
 		*)
 			logger::warning "Cannot check package installation for ${manager}"
@@ -150,7 +150,7 @@ packaging::_is_available() {
 			;;
 		flatpak)
 			packaging::_check_flatpak || return 1
-			flatpak search "${pkg}" | grep -qi "^${pkg}"
+			flatpak search "${pkg}" | grep -i "${pkg}" && return 1 || return 0
 			;;
 		*)
 			logger::error "Unsuported package manager: ${PACKAGER}"
@@ -177,43 +177,43 @@ packaging::install() {
 		manager="${PACKAGER}"
 	fi
 
-	if packaging::_is_installed "${package}" "${manager}"; then
+	if packaging::_is_installed "${package}" "${manager}" ; then
 		logger::debug "Package '${package}' already installed"
 		return 0
 	fi
 
-	if ! packaging::_is_available "${package}" "${manager}"; then
+	if ! packaging::_is_available "${package}" "${manager}" ; then
 		logger::error "Package '${package}' not available in repositories"
 		return 1
 	fi
 
 	case "${manager}" in
 		apt)
-			apt install -y "${package}" || {
+			apt install -y "${package}" 1> /dev/null || {
 				logger::error "Failed to install ${package}"
 				return 1
 			}
 			;;
 		dnf)
-			dnf install -y "${package}" || {
+			dnf install -y "${package}" 1> /dev/null || {
 				logger::error "Failed to install ${package}"
 				return 1
 			}
 			;;
 		rpm)
-			rpm -U "${package}" || {
+			rpm -U "${package}" 1> /dev/null || {
 				logger::error "Failed to install ${package}"
 				return 1
 			}
 			;;
 		yum)
-			yum install -y "${package}" || {
+			yum install -y "${package}" 1> /dev/null || {
 				logger::error "Failed to install ${package}"
 				return 1
 			}
 			;;
 		pacman)
-			pacman -S --noconfirm "${package}" || {
+			pacman -S --noconfirm "${package}" 1> /dev/null || {
 				logger::error "Failed to install ${package}"
 				return 1
 			}
@@ -232,14 +232,14 @@ packaging::install() {
 		# 	;;
 		snap)
 			packaging::_check_snap || return 1
-			snap install "${package}" || {
+			snap install "${package}" 1> /dev/null || {
 				logger::error "Failed to install snap ${package}"
 				return 1
 			}
 			;;
 		flatpak)
 			packaging::_check_flatpak || return 1
-			flatpak install -y flathub "${package}" || {
+			flatpak install -y flathub "${package}" 1> /dev/null || {
 				logger::error "Failed to install flatpak ${package}"
 				return 1
 			}
@@ -276,19 +276,19 @@ packaging::uninstall() {
 	case "${manager}" in
 		apt)
 			if [[ ${purge} -eq 1 ]]; then
-				apt purge -y "${package}" || {
+				apt purge -y "${package}" 1> /dev/null || {
 					logger::error "Failed to purge ${package}"
 					return 1
 				}
 			else
-				apt remove -y "${package}" || {
+				apt remove -y "${package}" 1> /dev/null || {
 					logger::error "Failed to uninstall ${package}"
 					return 1
 				}
 			fi
 			# autoremove and autoclean
-			apt autoremove -y || logger::warning "apt autoremove failed"
-			apt autoclean -y || logger::warning "apt autoclean failed"
+			apt autoremove -y 1> /dev/null || logger::warning "apt autoremove failed"
+			apt autoclean -y 1> /dev/null || logger::warning "apt autoclean failed"
 			;;
 		dnf)
 			# Fetch config files if configured to purge
@@ -297,7 +297,7 @@ packaging::uninstall() {
 				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
 			fi
 
-			dnf remove -y "${package}" || {
+			dnf remove -y "${package}" 1> /dev/null || {
 				logger::error "Failed to uninstall ${package}"
 				return 1
 			}
@@ -306,14 +306,14 @@ packaging::uninstall() {
 			if [[ -n "${config_files}" ]]; then
 				echo "${config_files}" | while IFS= read -r file; do
 					if [[ -f "${file}" || -d "${file}" ]]; then
-						rm -rf "${file}" || logger::warning "Failed to remove ${file}"
+						rm -rf "${file}" 1> /dev/null || logger::warning "Failed to remove ${file}"
 					fi
 				done
 			fi
 
 			# autoremove and clean
-			dnf autoremove -y || logger::warning "dnf autoremove failed"
-			dnf clean all || logger::warning "dnf clean failed"
+			dnf autoremove -y 1> /dev/null || logger::warning "dnf autoremove failed"
+			dnf clean all 1> /dev/null || logger::warning "dnf clean failed"
 			;;
 		rpm)
 			# Fetch config files if configured to purge
@@ -322,7 +322,7 @@ packaging::uninstall() {
 				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
 			fi
 
-			rpm -e "${package}" || {
+			rpm -e "${package}" 1> /dev/null || {
 				logger::error "Failed to uninstall ${package}"
 				return 1
 			}
@@ -331,7 +331,7 @@ packaging::uninstall() {
 			if [[ -n "${config_files}" ]]; then
 				echo "${config_files}" | while IFS= read -r file; do
 					if [[ -f "${file}" || -d "${file}" ]]; then
-						rm -rf "${file}" || logger::warning "Failed to remove ${file}"
+						rm -rf "${file}" 1> /dev/null || logger::warning "Failed to remove ${file}"
 					fi
 				done
 			fi
@@ -343,7 +343,7 @@ packaging::uninstall() {
 				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
 			fi
 
-			yum remove -y "${package}" || {
+			yum remove -y "${package}" 1> /dev/null || {
 				logger::error "Failed to uninstall ${package}"
 				return 1
 			}
@@ -352,22 +352,22 @@ packaging::uninstall() {
 			if [[ -n "${config_files}" ]]; then
 				echo "${config_files}" | while IFS= read -r file; do
 					if [[ -f "${file}" || -d "${file}" ]]; then
-						rm -rf "${file}" || logger::warning "Failed to remove ${file}"
+						rm -rf "${file}" 1> /dev/null || logger::warning "Failed to remove ${file}"
 					fi
 				done
 			fi
 
-			yum autoremove -y || logger::warning "yum autoremove failed"
-			yum clean all || logger::warning "yum clean failed"
+			yum autoremove -y 1> /dev/null || logger::warning "yum autoremove failed"
+			yum clean all 1> /dev/null || logger::warning "yum clean failed"
 			;;
 		pacman)
 			if [[ ${purge} -eq 1 ]]; then
-				pacman -Rns --noconfirm "${package}" || {
+				pacman -Rns --noconfirm "${package}" 1> /dev/null || {
 					logger::error "Failed to purge ${package}"
 					return 1
 				}
 			else
-				pacman -Rs --noconfirm "${package}" || {
+				pacman -Rs --noconfirm "${package}" 1> /dev/null || {
 					logger::error "Failed to uninstall ${package}"
 					return 1
 				}
@@ -375,51 +375,51 @@ packaging::uninstall() {
 
 			# Clean package cache
 			if [[ ${purge} -eq 1 ]]; then
-				pacman -Sc --noconfirm || logger::warning "pacman cache clean failed"
+				pacman -Sc --noconfirm 1> /dev/null || logger::warning "pacman cache clean failed"
 			fi
 			;;
 		yay)
 			if [[ ${purge} -eq 1 ]]; then
-				yay -Rns --noconfirm "${package}" || {
+				yay -Rns --noconfirm "${package}" 1> /dev/null || {
 					logger::error "Failed to purge ${package}"
 					return 1
 				}
 			else
-				yay -Rs --noconfirm "${package}" || {
+				yay -Rs --noconfirm "${package}" 1> /dev/null || {
 					logger::error "Failed to uninstall ${package}"
 					return 1
 				}
 			fi
 
 			# Clean cache
-			yay -Sc --noconfirm || logger::warning "yay cache clean failed"
+			yay -Sc --noconfirm 1> /dev/null || logger::warning "yay cache clean failed"
 			;;
 		apk)
 			if [[ ${purge} -eq 1 ]]; then
-				apk del --purge "${package}" || {
+				apk del --purge "${package}" 1> /dev/null || {
 				logger::error "Failed to purge ${package}"
 				return 1
 			}
 			else
-				apk del "${package}" || {
+				apk del "${package}" 1> /dev/null || {
 					logger::error "Failed to uninstall ${package}"
 					return 1
 				}
 			fi
 
 			# Clean cache
-			apk cache clean || logger::warning "apk cache clean failed"
+			apk cache clean 1> /dev/null || logger::warning "apk cache clean failed"
 			;;
 		snap)
 			packaging::_check_snap || return 1
 
 			if [[ ${purge} -eq 1 ]]; then
-				snap remove --purge "${package}" || {
+				snap remove --purge "${package}" 1> /dev/null || {
 					logger::error "Failed to purge snap ${package}"
 					return 1
 				}
 			else
-				snap remove "${package}" || {
+				snap remove "${package}" 1> /dev/null || {
 					logger::error "Failed to uninstall snap ${package}"
 					return 1
 				}
@@ -428,19 +428,19 @@ packaging::uninstall() {
 		flatpak)
 			packaging::_check_flatpak || return 1
 
-			flatpak uninstall -y "${package}" || {
+			flatpak uninstall -y "${package}" 1> /dev/null || {
 				logger::error "Failed to uninstall flatpak ${package}"
 				return 1
 			}
 
 			if [[ ${purge} -eq 1 ]]; then
-				flatpak uninstall --delete-data -y "${package}" 2>/dev/null || true
+				flatpak uninstall --delete-data -y "${package}" &>/dev/null || true
 
 				# Remove unused runtimes and dependencies
-				flatpak uninstall --unused --delete-data -y || logger::warning "flatpak cleanup failed"
+				flatpak uninstall --unused --delete-data -y 1> /dev/null || logger::warning "flatpak cleanup failed"
 
 				# Repair and prune repo
-				flatpak repair --user || logger::warning "flatpak repair failed"
+				flatpak repair --user 1> /dev/null || logger::warning "flatpak repair failed"
 			fi
 			;;
 		*)

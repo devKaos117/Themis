@@ -8,30 +8,6 @@ kali
 
 update
 
-code
-git # git config --global init.defaultBranch master, git config --global user.name, git config --global user.email
-gcc
-rust
-python3
-powershell
-
-brave-browser
-firefox
-torbrowser
-lynx
-discord
-flathub md.obsidian.Obsidian
-gimp
-vlc
-ranger
-LibreOffice
-qbittorrent
-7z
-rclone
-libavcodec-freeworld
-ffmpeg-free
-openrgb -> Effects plugin
-
 texlive-all -> (minify) latexmk pdflatex texlive-lastpage texlive-fancyhdr texlive-multirow texlive-enumitem texlive-mathtools texlive-amsfonts texlive-hyperref texlive-titlesec texlive-tkz-euclide
 
 
@@ -39,9 +15,7 @@ texlive-all -> (minify) latexmk pdflatex texlive-lastpage texlive-fancyhdr texli
 /etc/sudoers
 /etc/fstab
 
-check for fedora RPM Fusion
-Nvidia or AMD GPU and drivers -> amd-gpu-firmware rocm
-Show errors and warnings
+Nvidia or AMD GPU and drivers
 
 xfce panel profile
 desktop and workspace
