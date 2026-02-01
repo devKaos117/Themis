@@ -1,10 +1,11 @@
 uname to differ from offsec to personal env (kali or fedora/arch)
 
 kali
-	seclist
+	seclists
 	chisel-binaries
 	ligolo-ng
 	zaproxy
+	snmp
 
 update
 
