@@ -897,7 +897,7 @@ main() {
 	sysinfo::require_root || return 1
 	sysinfo::require_network || return 1
 
-	apt update -y && apt full-upgrade -y
+	apt update && apt full-upgrade -y
 
 	apt install -y kali-linux-everything
 
