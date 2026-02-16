@@ -912,8 +912,8 @@ main() {
 	# ====== CLI
 	chsh -s "/bin/zsh" $(id -nu 1000)
 	chsh -s "/bin/zsh" $(id -nu 0)
-	wget "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/zshrc" -O tmp && mv tmp "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
-	wget "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/zshrc" -O tmp && mv tmp "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
+	curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/zshrc" > "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
+	curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/zshrc" > "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
 
 	apt install -y zsh-autosuggestions zsh-syntax-highlighting
 	if apt install -y btop ; then
@@ -921,8 +921,8 @@ main() {
 		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
 		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config"; fi
 		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/btop"; fi
-		wget "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" -O tmp && mv tmp "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
-		wget "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" -O tmp && mv tmp "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
+		curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" > "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
+		curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" > "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
 	fi
 	apt install -y neovim  bat cpufetch fastfetch 7zip mc trash-cli ascii # tldr rclone
 	# ====== VIRT
