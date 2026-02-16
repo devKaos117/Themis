@@ -894,60 +894,42 @@ main() {
     # Detect system
     sysinfo::detect_all
 	sysinfo::print_summary
+	sysinfo::require_root || return 1
+	sysinfo::require_network || return 1
 
-	packaging::install kali-linux-everything
+	apt update -y && apt full-upgrade -y
+
+	apt install -y kali-linux-everything
 
 	# adding debian repos for tools not in kali
 	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
 
 	# ====== CLI
-	if packaging::install zsh ; then
-		chsh -s "/bin/zsh" $(id -nu 1000)
-		chsh -s "/bin/zsh" $(id -nu 0)
-		cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
-		cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
-	fi
-	packaging::install zsh-autosuggestions
-	packaging::install zsh-syntax-highlighting
-	if packaging::install btop ; then
+	chsh -s "/bin/zsh" $(id -nu 1000)
+	chsh -s "/bin/zsh" $(id -nu 0)
+	cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
+	cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
+
+	apt install -y zsh-autosuggestions zsh-syntax-highlighting
+	if apt install -y btop ; then
 		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
 		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/btop"; fi
 		cp "$_SCRIPT_DIR/profiles/btop.conf" "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
 		cp "$_SCRIPT_DIR/profiles/btop.conf" "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
 	fi
-	packaging::install neovim
-	packaging::install bat
-	#packaging::install tldr
-	packaging::install cpufetch
-	packaging::install fastfetch
-	packaging::install 7zip
-	#packaging::install rclone
-	packaging::install mc
-	packaging::install trash-cli
-	packaging::install ascii
+	apt install -y neovim  bat cpufetch fastfetch 7zip mc trash-cli ascii # tldr rclone
 	# ====== VIRT
 	# docker
-	packaging::install docker.io
-	packaging::install docker-compose
-	packaging::install docker-cli
-	packaging::install docker-buildx
-	packaging::install docker-clean
-	packaging::install docker-doc
+	apt install -y docker.io docker-compose docker-cli docker-buildx docker-clean docker-doc
 	systemctl enable --now docker
 	# ====== VPN
-	packaging::install tor && systemctl enable --now tor 1> /dev/null
-	packaging::install openvpn
-	packaging::install proxychains-ng
+	apt install -y tor && systemctl enable --now tor
+	apt install -y openvpn proxychains-ng
 	# ====== Browser
-	packaging::install lynx
+	apt install -y lynx
 	# ====== Misc
-	packaging::install chisel
-	packaging::install chisel-common-binaries
-	packaging::install ligolo-ng
-	packaging::install zaproxy
-	packaging::install seclists
-	packaging::install feroxbuster
+	apt install -y chisel chisel-common-binaries ligolo-ng zaproxy seclists feroxbuster
 	# configure snmp
 	# ====== UI
 	# load panel
