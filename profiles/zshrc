@@ -10,7 +10,7 @@ setopt notify			   # report the status of background jobs immediately
 setopt numericglobsort	   # sort filenames numerically when it makes sense
 setopt promptsubst		   # enable command substitution in prompt
 
-WORDCHARS=${WORDCHARS//\/} # Don't consider certain characters part of the word
+WORDCHARS='_-' # Don't consider certain characters part of the word
 
 # hide EOL sign ('%')
 PROMPT_EOL_MARK=""
@@ -48,8 +48,8 @@ zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 # History configurations
 HISTFILE=~/.zsh_history
-HISTSIZE=32
-SAVEHIST=64
+HISTSIZE=1024
+SAVEHIST=2048
 setopt hist_expire_dups_first # delete duplicates first when HISTFILE size exceeds HISTSIZE
 setopt hist_ignore_dups		  # ignore duplicated commands history list
 setopt hist_ignore_space	  # ignore commands that start with space
@@ -92,25 +92,25 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 configure_prompt() {
-	prompt_symbol=㉿
-	# Skull emoji for root terminal
-	#[ "$EUID" -eq 0 ] && prompt_symbol=💀
-	case "$PROMPT_ALTERNATIVE" in
-		twoline)
-			PROMPT=$'%F{%(#.blue.green)}┌──${debian_chroot:+($debian_chroot)─}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))─}(%B%F{%(#.red.blue)}%n'$prompt_symbol$'%m%b%F{%(#.blue.green)})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%F{%(#.blue.green)}]\n└─%B%(#.%F{red}#.%F{blue}$)%b%F{reset} '
-			# Right-side prompt with exit codes and background processes
-			#RPROMPT=$'%(?.. %? %F{red}%B⨯%b%F{reset})%(1j. %j %F{yellow}%B⚙%b%F{reset}.)'
-			;;
-		oneline)
-			PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{%(#.red.blue)}%n@%m%b%F{reset}:%B%F{%(#.blue.green)}%~%b%F{reset}%(#.#.$) '
-			RPROMPT=
-			;;
-		backtrack)
-			PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{red}%n@%m%b%F{reset}:%B%F{blue}%~%b%F{reset}%(#.#.$) '
-			RPROMPT=
-			;;
-	esac
-	unset prompt_symbol
+    prompt_symbol=?
+    # Skull emoji for root terminal
+    #[ "$EUID" -eq 0 ] && prompt_symbol=??
+    case "$PROMPT_ALTERNATIVE" in
+        twoline)
+            PROMPT=$'%F{%(#.blue.green)}???${debian_chroot:+($debian_chroot)?}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))?}(%B%F{%(#.red.blue)}%n'$prompt_symbol$'%m%b%F{%(#.blue.green)})-[%B%F{reset}%(6~.%-1~/?/%4~.%5~)%b%F{%(#.blue.green)}]\n??%B%(#.%F{red}#.%F{blue}$)%b%F{reset} '
+            # Right-side prompt with exit codes and background processes
+            #RPROMPT=$'%(?.. %? %F{red}%B?%b%F{reset})%(1j. %j %F{yellow}%B?%b%F{reset}.)'
+            ;;
+        oneline)
+            PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{%(#.red.blue)}%n@%m%b%F{reset}:%B%F{%(#.blue.green)}%~%b%F{reset}%(#.#.$) '
+            RPROMPT=
+            ;;
+        backtrack)
+            PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{red}%n@%m%b%F{reset}:%B%F{blue}%~%b%F{reset}%(#.#.$) '
+            RPROMPT=
+            ;;
+    esac
+    unset prompt_symbol
 }
 
 # The following block is surrounded by two delimiters.
