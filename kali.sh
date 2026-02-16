@@ -900,23 +900,29 @@ main() {
 	apt update && apt full-upgrade -y
 
 	apt install -y kali-linux-everything
+	sudo apt autoremove -y && sudo apt autoclean -y
 
 	# adding debian repos for tools not in kali
 	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
 
+	# altering sudoers
+	sed -i.bak 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo   ALL=(ALL:ALL) NOPASSWD:ALL/' /etc/sudoers && visudo -c
+
 	# ====== CLI
 	chsh -s "/bin/zsh" $(id -nu 1000)
 	chsh -s "/bin/zsh" $(id -nu 0)
-	cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
-	cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
+	wget "https://github.com/devKaos117/Themis/blob/main/profiles/zshrc" -o "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
+	wget "https://github.com/devKaos117/Themis/blob/main/profiles/zshrc" -o "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
 
 	apt install -y zsh-autosuggestions zsh-syntax-highlighting
 	if apt install -y btop ; then
+		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config"; fi
 		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
+		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config"; fi
 		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/btop"; fi
-		cp "$_SCRIPT_DIR/profiles/btop.conf" "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
-		cp "$_SCRIPT_DIR/profiles/btop.conf" "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
+		wget "https://github.com/devKaos117/Themis/blob/main/profiles/btop.conf" -o "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
+		wget "https://github.com/devKaos117/Themis/blob/main/profiles/btop.conf" -o "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
 	fi
 	apt install -y neovim  bat cpufetch fastfetch 7zip mc trash-cli ascii # tldr rclone
 	# ====== VIRT
@@ -933,7 +939,7 @@ main() {
 	# configure snmp
 	# ====== UI
 	# load panel
-	xfce4-panel-profiles load "$_SCRIPT_DIR/profiles/Kaos_KaliPanel.tar"
+	xfce4-panel-profiles load <(curl -s "https://github.com/devKaos117/Themis/blob/main/profiles/Kaos_KaliPanel.tar")
 	# alter workspace count
 	xfconf-query -c xfwm4 -p /general/workspace_count -n -t int -s 2
 	# disable screensaver
