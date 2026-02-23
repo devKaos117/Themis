@@ -284,8 +284,7 @@ sysinfo::_detect_virtualization() {
 
 sysinfo::_detect_network() {
 	# Simple connectivity check
-	if ping -c 1 -W 2 8.8.8.8 &> /dev/null || \
-		ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
+	if ping -c 1 -W 2 8.8.8.8 &> /dev/null || ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
 		SYS_HAS_NETWORK=1
 		logger::debug "Network connectivity confirmed"
 	else
