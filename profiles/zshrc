@@ -257,8 +257,8 @@ git_push() {
 	git add . && git commit -m "${1}" && git push origin main
 }
 #--- Data encoding
-alias enCode='xxd -p | base64'
-alias deCode='base64 -d | xxd -r -p'
+enCode() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n' | base64; }
+deCode() { printf '%s' "$1" | base64 -d | sed 's/../\\x&/g' | xargs -0 printf "%b"; }
 
 #--- Random Shit
 alias cafe='while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe"'

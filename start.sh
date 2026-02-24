@@ -934,6 +934,7 @@ fedora::cli() {
 	packaging::install mc
 	packaging::install trash-cli
 	packaging::install ascii
+	packaging::install xxd
 }
 
 fedora::dev() {
@@ -1029,6 +1030,7 @@ fedora::general() {
 	packaging::install libreoffice
 	packaging::install qbittorrent
 	packaging::install openrgb
+	packaging::install qpdf
 }
 
 fedora::media() {

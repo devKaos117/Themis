@@ -923,7 +923,7 @@ main() {
 		curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" > "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
 		curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" > "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
 	fi
-	apt install -y neovim  bat cpufetch fastfetch 7zip mc trash-cli ascii asciinema # tldr rclone
+	apt install -y neovim  bat cpufetch fastfetch 7zip mc trash-cli ascii asciinema xxd # tldr rclone
 	# ====== VIRT
 	# docker
 	apt install -y docker.io docker-compose docker-cli docker-buildx docker-clean docker-doc
