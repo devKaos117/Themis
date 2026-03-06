@@ -958,6 +958,8 @@ fedora::gpu() {
 	dnf copr enable -y ilyaz/LACT # Check AMD OC
 	packaging::install vulkan-tools
 	packaging::install radeontop
+	packaging::install rocm 
+	packaging::install amd-gpu-firmware
 	packaging::install lact && sudo systemctl enable --now lactd
 }
 
@@ -1031,6 +1033,8 @@ fedora::general() {
 	packaging::install qbittorrent
 	packaging::install openrgb
 	packaging::install qpdf
+	# d2
+	curl -fsSL https://d2lang.com/install.sh | sh -s --
 }
 
 fedora::media() {
