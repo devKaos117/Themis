@@ -259,6 +259,7 @@ git_push() {
 #--- Data encoding
 enCode() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n' | base64; }
 deCode() { printf '%s' "$1" | base64 -d | sed 's/../\\x&/g' | xargs -0 printf "%b"; }
+pwenc() { echo -n "$1" | iconv -t UTF-16LE | base64 -w 0 }
 
 #--- Random Shit
 alias cafe='while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe"'
