@@ -1,14 +1,14 @@
-# ~/.zshrc file for zsh interactive shells.
-# see /usr/share/doc/zsh/examples/zshrc for examples
+# ============================================================================
+# KAOS.zshrc
+# ============================================================================
 
-setopt autocd			   # change directory just by typing its name
-#setopt correct			   # auto correct mistakes
-setopt interactivecomments # allow comments in interactive mode
-setopt magicequalsubst	   # enable filename expansion for arguments of the form ‘anything=expression’
-setopt nonomatch		   # hide error message if there is no match for the pattern
-setopt notify			   # report the status of background jobs immediately
-setopt numericglobsort	   # sort filenames numerically when it makes sense
-setopt promptsubst		   # enable command substitution in prompt
+setopt autocd				# change directory just by typing its name
+setopt interactivecomments	# allow comments in interactive mode
+setopt magicequalsubst		# enable filename expansion for arguments of the form ‘anything=expression’
+setopt nonomatch			# hide error message if there is no match for the pattern
+setopt notify				# report the status of background jobs immediately
+setopt numericglobsort		# sort filenames numerically when it makes sense
+setopt promptsubst			# enable command substitution in prompt
 
 WORDCHARS='_-' # Don't consider certain characters part of the word
 
@@ -54,7 +54,6 @@ setopt hist_expire_dups_first # delete duplicates first when HISTFILE size excee
 setopt hist_ignore_dups		  # ignore duplicated commands history list
 setopt hist_ignore_space	  # ignore commands that start with space
 setopt hist_verify			  # show command with history expansion to user before running it
-#setopt share_history		  # share command history data
 
 # force zsh to show the complete history
 alias history="history 0"
@@ -75,42 +74,35 @@ case "$TERM" in
 	xterm-color|*-256color) color_prompt=yes;;
 esac
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
-force_color_prompt=yes
-
-if [ -n "$force_color_prompt" ]; then
-	if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-		# We have color support; assume it's compliant with Ecma-48
-		# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-		# a case would tend to support setf rather than setaf.)
-		color_prompt=yes
-	else
-		color_prompt=
-	fi
+# Force colored prompt
+if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+else
+	color_prompt=
 fi
 
 configure_prompt() {
-    prompt_symbol=㉿
-    # Skull emoji for root terminal
-    #[ "$EUID" -eq 0 ] && prompt_symbol=💀
-    case "$PROMPT_ALTERNATIVE" in
-        twoline)
-            PROMPT=$'%F{%(#.blue.green)}┌──${debian_chroot:+($debian_chroot)─}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))─}(%B%F{%(#.red.blue)}%n'$prompt_symbol$'%m%b%F{%(#.blue.green)})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%F{%(#.blue.green)}]\n└─%B%(#.%F{red}#.%F{blue}$)%b%F{reset} '
-            # Right-side prompt with exit codes and background processes
-            #RPROMPT=$'%(?.. %? %F{red}%B⨯%b%F{reset})%(1j. %j %F{yellow}%B⚙%b%F{reset}.)'
-            ;;
-        oneline)
-            PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{%(#.red.blue)}%n@%m%b%F{reset}:%B%F{%(#.blue.green)}%~%b%F{reset}%(#.#.$) '
-            RPROMPT=
-            ;;
-        backtrack)
-            PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{red}%n@%m%b%F{reset}:%B%F{blue}%~%b%F{reset}%(#.#.$) '
-            RPROMPT=
-            ;;
-    esac
-    unset prompt_symbol
+	prompt_symbol=㉿
+	[ "$EUID" -eq 0 ] && prompt_symbol=💀 # Skull emoji for root terminal
+	case "$PROMPT_ALTERNATIVE" in
+		twoline)
+			PROMPT=$'%F{%(#.blue.green)}┌──${debian_chroot:+($debian_chroot)─}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))─}(%B%F{%(#.red.blue)}%n'$prompt_symbol$'%m%b%F{%(#.blue.green)})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%F{%(#.blue.green)}]\n└─%B%(#.%F{red}#.%F{blue}$)%b%F{reset} '
+			# Right-side prompt with exit codes and background processes
+			#RPROMPT=$'%(?.. %? %F{red}%B⨯%b%F{reset})%(1j. %j %F{yellow}%B⚙%b%F{reset}.)'
+			;;
+		oneline)
+			PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{%(#.red.blue)}%n@%m%b%F{reset}:%B%F{%(#.blue.green)}%~%b%F{reset}%(#.#.$) '
+			RPROMPT=
+			;;
+		backtrack)
+			PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{red}%n@%m%b%F{reset}:%B%F{blue}%~%b%F{reset}%(#.#.$) '
+			RPROMPT=
+			;;
+	esac
+	unset prompt_symbol
 }
 
 # The following block is surrounded by two delimiters.
@@ -175,7 +167,7 @@ if [ "$color_prompt" = yes ]; then
 else
 	PROMPT='${debian_chroot:+($debian_chroot)}%n@%m:%~%(#.#.$) '
 fi
-unset color_prompt force_color_prompt
+unset color_prompt
 
 toggle_oneline_prompt(){
 	if [ "$PROMPT_ALTERNATIVE" = oneline ]; then
@@ -219,6 +211,13 @@ if [ -x /usr/bin/dircolors ]; then
 
 	alias fgrep='fgrep --color=auto'
 	alias egrep='egrep --color=auto'
+	alias grep='grep --color=auto'
+	alias diff='diff --color=auto'
+	alias ip='ip --color=auto'
+
+	alias ls='ls -l --all --human-readable --context --color=auto'
+	alias b64='base64'
+	alias db64='base64 -d'
 
 	export LESS_TERMCAP_mb=$'\E[1;31m'	   # begin blink
 	export LESS_TERMCAP_md=$'\E[1;36m'	   # begin bold
@@ -245,21 +244,75 @@ if [ -f /etc/zsh_command_not_found ]; then
 	. /etc/zsh_command_not_found
 fi
 
-#------- Aliases
-#--- Command's favorite uses
-alias ls='ls -l --all --human-readable --context --color=auto'
-alias grep='grep --color=auto'
-alias diff='diff --color=auto'
-alias ip='ip --color=auto'
-#--- Custom commands and functions
-#--- Quick git push
+# ============ Custom functions and utilities
+# ====== Quick git push
 git_push() {
 	git add . && git commit -m "${1}" && git push origin main
 }
-#--- Data encoding
+
+#====== Port range batching
+port_batch() {
+	# ====== Initializations
+	declare -r TOTAL_PORTS=65536
+	declare -r MAX_PORT=65535
+
+	declare -r RED="\033[1;91m"
+	declare -r BLUE="\033[1;94m"
+	declare -r RESET="\033[0m"
+
+	TOTAL_BATCHES="$1"
+	BATCH_INDEX="$2"
+
+	# ====== Validation
+	if [[ "$#" -ne 2 ]]; then
+		echo "${BLUE}Usage:${RESET} $0 [NUMBER(batches)] [NUMBER(index)]"
+		echo "${BLUE}Description:${RESET} Divide the port range (0-65535) into NUMBER(batches) and return the range for the specified NUMBER(index)"
+		return 1
+	fi
+
+	# Ensure inputs are positive integers using regular expressions
+	if ! [[ "$TOTAL_BATCHES" =~ ^[0-9]+$ ]] || ! [[ "$BATCH_INDEX" =~ ^[0-9]+$ ]]; then
+		echo "${RED}Error:${RESET} Both arguments must be positive integers" >&2
+		return 1
+	fi
+
+	if (( TOTAL_BATCHES < 1 )); then
+		echo "${RED}Error:${RESET} Total batches must be at least 1" >&2
+		return 1
+	fi
+
+	if (( BATCH_INDEX < 1 || BATCH_INDEX > TOTAL_BATCHES )); then
+		echo "${RED}Error:${RESET} Batch index must be between 1 and ${TOTAL_BATCHES}" >&2
+		return 1
+	fi
+
+	# ====== Calculation
+	# Calculate base size of each batch and any leftover ports
+	BATCH_SIZE=$(( TOTAL_PORTS / TOTAL_BATCHES ))
+	REMAINDER=$(( TOTAL_PORTS % TOTAL_BATCHES ))
+
+	# Calculate start and end ports (0-indexed math translated to standard port numbers)
+	START_PORT=$(( (BATCH_INDEX - 1) * BATCH_SIZE ))
+	END_PORT=$(( START_PORT + BATCH_SIZE - 1 ))
+
+	# Distribute the remainder to the very last batch so no ports are missed
+	if (( BATCH_INDEX == TOTAL_BATCHES )); then
+		END_PORT=$(( END_PORT + REMAINDER ))
+	fi
+
+	# Safety cap (just in case)
+	if (( END_PORT > MAX_PORT )); then
+		END_PORT=$MAX_PORT
+	fi
+
+	# ====== Output
+	echo "${START_PORT}-${END_PORT}"
+}
+
+# ====== Data encoding
 enCode() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n' | base64; }
 deCode() { printf '%s' "$1" | base64 -d | sed 's/../\\x&/g' | xargs -0 printf "%b"; }
-pwenc() { echo -n "$1" | iconv -t UTF-16LE | base64 -w 0 }
+win_pw64() { echo -n "$1" | iconv -t UTF-16LE | base64 -w 0 }
 
-#--- Random Shit
-alias cafe='while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe"'
+# ====== I NEED COFFEE
+cafe() { while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe" }

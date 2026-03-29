@@ -1,5 +1,6 @@
 uname to differ from offsec to personal env (kali or fedora/arch)
 
+wine
 
 Nvidia or AMD GPU and drivers
 
