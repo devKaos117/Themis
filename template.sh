@@ -1,7 +1,7 @@
 #!/bin/bash
 
-set -euo pipefail  # Exit on error, undefined vars, pipe failures
-IFS=$'\n\t'        # Safer field splitting
+set -euo pipefail	# Exit on error, undefined vars, pipe failures
+IFS=$'\n\t'			# Safer field splitting
 
 # ============================================================================
 # LOGGER
@@ -133,80 +133,77 @@ logger::debug() {
 # ============================================================================
 # ============ Initializations
 # System information storage
-declare -g SYS_OS=""				# Operating system ID (ubuntu, debian, arch, etc.)
-declare -g SYS_OS_LIKE=""			# OS family (debian, rhel, arch)
-declare -g SYS_OS_VERSION=""		# OS version
-declare -g SYS_OS_CODENAME=""		# OS codename
-declare -g SYS_KERNEL=""			# Kernel version
-declare -g SYS_ARCH=""				# Architecture (x86_64, aarch64, etc.)
-declare -g PACKAGER=""				# Package manager (apt, dnf, pacman, etc.)
-declare -g SYS_INIT_SYSTEM=""		# Init system (systemd, openrc, sysvinit)
-declare -g SYS_IS_LIVE=0			# Running from live media (0=no, 1=yes)
-declare -g SYS_IS_VM=0				# Running in virtual machine
-declare -g SYS_IS_CONTAINER=0		# Running in container
-declare -g SYS_HAS_NETWORK=0		# Network connectivity
-declare -g SYS_IS_ROOT=0			# Running as root
-
-# Capability flags
-declare -g SYS_HAS_GIT=0
+declare OS=""				# Operating system ID (ubuntu, debian, arch, etc.)
+declare OS_UPSTREAM=""		# OS family (debian, rhel, arch)
+declare OS_VERSION=""		# OS version
+declare OS_CODENAME=""		# OS codename
+declare KERNEL=""			# Kernel version
+declare ARCH=""				# Architecture (x86_64, aarch64, etc.)
+declare PACKAGER=""			# Package manager (apt, dnf, pacman, etc.)
+declare INIT_SYSTEM=""		# Init system (systemd, openrc, sysvinit)
+declare IS_LIVE=0			# Running from live media (0=no, 1=yes)
+declare IS_VM=0				# Running in virtual machine
+declare IS_CONTAINER=0		# Running in container
+declare ONLINE=0			# Network connectivity
+declare IS_ROOT=0			# Running as root
 
 # ============ Private functions
 sysinfo::_detect_os() {
 	if [[ -f /etc/os-release ]]; then
-		source /etc/os-release # Parse /etc/os-release
+		source /etc/os-release
 
-		SYS_OS="${ID}"
-		SYS_OS_LIKE="${ID_LIKE:-${ID}}"
+		OS="${ID}"
+		OS_UPSTREAM="${ID_LIKE:-${ID}}"
 
 		# Version detection with fallbacks
 		if [[ -n "${VERSION_ID:-}" ]]; then
-			SYS_OS_VERSION="${VERSION_ID}"
+			OS_VERSION="${VERSION_ID}"
 		elif [[ -n "${VARIANT_ID:-}" ]]; then
-			SYS_OS_VERSION="${VARIANT_ID}"
+			OS_VERSION="${VARIANT_ID}"
 		elif [[ -n "${BUILD_ID:-}" ]]; then
-			SYS_OS_VERSION="${BUILD_ID}"
+			OS_VERSION="${BUILD_ID}"
 		else
-			SYS_OS_VERSION="rolling"
+			OS_VERSION="rolling"
 		fi
 
 		# Codename detection with fallbacks
 		if [[ -n "${VERSION_CODENAME:-}" ]]; then
-			SYS_OS_CODENAME="${VERSION_CODENAME}"
+			OS_CODENAME="${VERSION_CODENAME}"
 		elif [[ -n "${VARIANT:-}" ]]; then
-			SYS_OS_CODENAME="${VARIANT}"
+			OS_CODENAME="${VARIANT}"
 		elif [[ -n "${VERSION:-}" ]]; then
-			SYS_OS_CODENAME=$(echo "${VERSION}" | grep -oP '\(\K[^)]+' || echo "unknown")
+			OS_CODENAME=$(echo "${VERSION}" | grep -oP '\(\K[^)]+' || echo "unknown")
 		else
-			SYS_OS_CODENAME="unknown"
+			OS_CODENAME="unknown"
 		fi
 
-		logger::debug "OS: ${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
+		logger::debug "OS: ${OS} ${OS_VERSION} (${OS_CODENAME})"
 	elif [[ -f /etc/lsb-release ]]; then
 		source /etc/lsb-release # Parse /etc/lsb-release
-		SYS_OS="${DISTRIB_ID,,}" # lowercase
-		SYS_OS_LIKE="${SYS_OS}"
-		SYS_OS_VERSION="${DISTRIB_RELEASE:-unknown}"
-		SYS_OS_CODENAME="${DISTRIB_CODENAME:-unknown}"
+		OS="${DISTRIB_ID,,}" # lowercase
+		OS_UPSTREAM="${OS}"
+		OS_VERSION="${DISTRIB_RELEASE:-unknown}"
+		OS_CODENAME="${DISTRIB_CODENAME:-unknown}"
 
-		logger::debug "OS (LSB): ${SYS_OS} ${SYS_OS_VERSION}"
+		logger::debug "OS (LSB): ${OS} ${OS_VERSION}"
 	else
 		logger::warning "Could not detect OS via standard methods"
-		SYS_OS="unknown"
-		SYS_OS_LIKE="unknown"
-		SYS_OS_VERSION="unknown"
-		SYS_OS_CODENAME="unknown"
+		OS="unknown"
+		OS_UPSTREAM="unknown"
+		OS_VERSION="unknown"
+		OS_CODENAME="unknown"
 
 	fi
 }
 
 sysinfo::_detect_kernel() {
-	SYS_KERNEL="$(uname -r)"
-	logger::debug "Kernel: ${SYS_KERNEL}"
+	KERNEL="$(uname -r)"
+	logger::debug "Kernel: ${KERNEL}"
 }
 
 sysinfo::_detect_arch() {
-	SYS_ARCH="$(uname -m)"
-	logger::debug "Architecture: ${SYS_ARCH}"
+	ARCH="$(uname -m)"
+	logger::debug "Architecture: ${ARCH}"
 }
 
 sysinfo::_detect_package_manager() {
@@ -232,16 +229,16 @@ sysinfo::_detect_package_manager() {
 
 sysinfo::_detect_init_system() {
 	if [[ -d /run/systemd/system ]]; then
-		SYS_INIT_SYSTEM="systemd"
+		INIT_SYSTEM="systemd"
 	elif [[ -f /sbin/openrc ]]; then
-		SYS_INIT_SYSTEM="openrc"
+		INIT_SYSTEM="openrc"
 	elif [[ -f /sbin/init && ! -L /sbin/init ]]; then
-		SYS_INIT_SYSTEM="sysvinit"
+		INIT_SYSTEM="sysvinit"
 	else
-		SYS_INIT_SYSTEM="unknown"
+		INIT_SYSTEM="unknown"
 	fi
 
-	logger::debug "Init system: ${SYS_INIT_SYSTEM}"
+	logger::debug "Init system: ${INIT_SYSTEM}"
 }
 
 sysinfo::_detect_live_environment() {
@@ -249,7 +246,7 @@ sysinfo::_detect_live_environment() {
 	logger::debug "Looking for live environment indicators"
 
 	if grep -q "boot=live" /proc/cmdline 2>/dev/null || grep -q "live" /proc/cmdline 2>/dev/null || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
-		SYS_IS_LIVE=1
+		IS_LIVE=1
 		logger::debug "Live environment detected"
 	fi
 }
@@ -260,14 +257,14 @@ sysinfo::_detect_virtualization() {
 
 	if command -v systemd-detect-virt &> /dev/null; then
 		if [[ "$(systemd-detect-virt 2>/dev/null)" != "none" ]]; then
-			SYS_IS_VM=1
+			IS_VM=1
 			logger::debug "Virtualization detected: $(systemd-detect-virt)"
 		fi
 	elif [[ -f /sys/class/dmi/id/product_name ]]; then
 		local product_name
 		product_name="$(cat /sys/class/dmi/id/product_name 2>/dev/null)"
 		if [[ "$product_name" =~ (VirtualBox|VMware|KVM|QEMU) ]]; then
-			SYS_IS_VM=1
+			IS_VM=1
 			logger::debug "VM detected: $product_name"
 		fi
 	fi
@@ -277,7 +274,7 @@ sysinfo::_detect_virtualization() {
 
 	if [[ -f /.dockerenv ]] || \
 		grep -q "docker\|lxc" /proc/1/cgroup 2>/dev/null; then
-		SYS_IS_CONTAINER=1
+		IS_CONTAINER=1
 		logger::debug "Container environment detected"
 	fi
 }
@@ -285,7 +282,7 @@ sysinfo::_detect_virtualization() {
 sysinfo::_detect_network() {
 	# Simple connectivity check
 	if ping -c 1 -W 2 8.8.8.8 &> /dev/null || ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
-		SYS_HAS_NETWORK=1
+		ONLINE=1
 		logger::debug "Network connectivity confirmed"
 	else
 		logger::warning "No network connectivity detected"
@@ -294,7 +291,7 @@ sysinfo::_detect_network() {
 
 sysinfo::_detect_privileges() {
 	if [[ $EUID -eq 0 ]]; then
-		SYS_IS_ROOT=1
+		IS_ROOT=1
 		logger::debug "Running as root"
 	else
 		logger::debug "Running as user: $(whoami)"
@@ -323,21 +320,21 @@ sysinfo::print_summary() {
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	echo "System Information"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	echo "OS:			${SYS_OS} ${SYS_OS_VERSION} (${SYS_OS_CODENAME})"
-	echo "Kernel:			${SYS_KERNEL}"
-	echo "Architecture:		${SYS_ARCH}"
+	echo "OS:			${OS} ${OS_VERSION} (${OS_CODENAME})"
+	echo "Kernel:			${KERNEL}"
+	echo "Architecture:		${ARCH}"
 	echo "Package Manager:	${PACKAGER}"
-	echo "Init System:		${SYS_INIT_SYSTEM}"
-	echo "Live Environment:	$([[ ${SYS_IS_LIVE} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Virtual Machine:	$([[ ${SYS_IS_VM} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Container:		$([[ ${SYS_IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Network:		$([[ ${SYS_HAS_NETWORK} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
-	echo "Running as:		$([[ ${SYS_IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
+	echo "Init System:		${INIT_SYSTEM}"
+	echo "Live Environment:	$([[ ${IS_LIVE} -eq 1 ]] && echo 'Yes' || echo 'No')"
+	echo "Virtual Machine:	$([[ ${IS_VM} -eq 1 ]] && echo 'Yes' || echo 'No')"
+	echo "Container:		$([[ ${IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
+	echo "Network:		$([[ ${ONLINE} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
+	echo "Running as:		$([[ ${IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
 sysinfo::require_root() {
-	if [[ ${SYS_IS_ROOT} -ne 1 ]]; then
+	if [[ ${IS_ROOT} -ne 1 ]]; then
 		logger::error "This operation requires root privileges"
 		return 1
 	fi
@@ -345,23 +342,23 @@ sysinfo::require_root() {
 }
 
 sysinfo::require_network() {
-	if [[ ${SYS_HAS_NETWORK} -ne 1 ]]; then
+	if [[ ${ONLINE} -ne 1 ]]; then
 		logger::error "This operation requires network connectivity"
 		return 1
 	fi
 	return 0
 }
 
-sysinfo::is_debian_based() {
-	[[ "${SYS_OS_LIKE}" =~ debian ]] && return 0 || return 1
+sysinfo::is_debian_downstream() {
+	[[ "${OS_UPSTREAM}" =~ debian ]] && return 0 || return 1
 }
 
-sysinfo::is_arch_based() {
-	[[ "${SYS_OS_LIKE}" =~ arch ]] && return 0 || return 1
+sysinfo::is_arch_downstream() {
+	[[ "${OS_UPSTREAM}" =~ arch ]] && return 0 || return 1
 }
 
-sysinfo::is_redhat_based() {
-	[[ "${SYS_OS_LIKE}" =~ (rhel|fedora) ]] && return 0 || return 1
+sysinfo::is_redhat_downstream() {
+	[[ "${OS_UPSTREAM}" =~ (rhel|fedora) ]] && return 0 || return 1
 }
 
 sysinfo::has_cmd() {
@@ -382,7 +379,7 @@ packaging::_check_snap() {
 	# Check if snapd service is running
 	if ! systemctl is-active --quiet snapd.socket; then
 		logger::debug "Starting snapd service"
-		systemctl enable --now snapd.socket 1>  /dev/null || {
+		systemctl enable --now snapd.socket 1> /dev/null || {
 			logger::error "Failed to start snapd service"
 			return 1
 		}
@@ -391,7 +388,7 @@ packaging::_check_snap() {
 	# Create classic snap symlink if needed
 	if [[ ! -L /snap ]]; then
 		logger::debug "Creating /snap symlink"
-		ln -s /var/lib/snapd/snap /snap 1>  /dev/null || {
+		ln -s /var/lib/snapd/snap /snap 1> /dev/null || {
 			logger::error "Failed to create /snap symlink"
 			return 1
 		}
@@ -425,7 +422,7 @@ packaging::_is_installed() {
 
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
-		manager="${PACKAGER}"
+		manager="${sysinfo::_PACKAGER}"
 	fi
 
 	case "${manager}" in
@@ -465,7 +462,7 @@ packaging::_is_available() {
 
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
-		manager="${PACKAGER}"
+		manager="${sysinfo::_PACKAGER}"
 	fi
 
 	case "${manager}" in
@@ -505,7 +502,7 @@ packaging::_is_available() {
 			flatpak search "${pkg}" | grep -i "${pkg}" && return 1 || return 0
 			;;
 		*)
-			logger::error "Unsuported package manager: ${PACKAGER}"
+			logger::error "Unsuported package manager: ${sysinfo::_PACKAGER}"
 			return 1
 			;;
 	esac
@@ -523,7 +520,7 @@ packaging::install() {
 
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
-		manager="${PACKAGER}"
+		manager="${sysinfo::_PACKAGER}"
 	fi
 
 	if packaging::_is_installed "${package}" "${manager}" ; then
@@ -614,7 +611,7 @@ packaging::uninstall() {
 
 	# Auto-detect manager if not specified
 	if [[ "${manager}" == "auto" ]]; then
-		manager="${PACKAGER}"
+		manager="${sysinfo::_PACKAGER}"
 	fi
 
 	if ! packaging::_is_installed "${package}" "${manager}"; then
@@ -808,7 +805,7 @@ packaging::update() {
 	sysinfo::require_root || return 1
 	sysinfo::require_network || return 1
 
-	case "${PACKAGER}" in
+	case "${sysinfo::_PACKAGER}" in
 		apt)
 			apt update -y || {
 				logger::error "apt update failed"
@@ -851,7 +848,7 @@ packaging::update() {
 		# 	...
 		# 	;;
 		*)
-			logger::error "Unsupported package manager: ${PACKAGER}"
+			logger::error "Unsupported package manager: ${sysinfo::_PACKAGER}"
 			return 1
 			;;
 	esac
@@ -870,189 +867,6 @@ packaging::update() {
 }
 
 # ============================================================================
-# CHEF
-# ============================================================================
-
-fedora::sources() { # DNF plugins, RPM Fusion, Brave, Microsoft, Docker
-	logger::info "Setting up sources"
-	# ====== DNF
-	packaging::install "dnf-plugins-core"
-	sed -i '/^max_parallel_downloads=/c\max_parallel_downloads=10' /etc/dnf/dnf.conf || echo 'max_parallel_downloads=10' >> /etc/dnf/dnf.conf
-	echo "fastestmirror=True" >> /etc/dnf/dnf.conf
-	echo "defaultyes=True" >> /etc/dnf/dnf.conf
-	# ====== RPM Fusion
-	if [[ ! -e /etc/yum.repos.d/rpmfusion-free.repo ]]; then packaging::install "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"; fi
-	if [[ ! -e /etc/yum.repos.d/rpmfusion-nonfree.repo ]]; then packaging::install "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"; fi
-	dnf config-manager setopt fedora-cisco-openh264.enabled=1
-	# ====== Brave
-	# https://brave.com/linux/
-	if [[ ! -f "/etc/yum.repos.d/brave-browser.repo" ]]; then
-		dnf config-manager addrepo --from-repofile="https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo"
-	fi
-	# ====== Microsoft
-	# https://learn.microsoft.com/pt-br/powershell/scripting/install/install-rhel?view=powershell-7.5
-	# https://code.visualstudio.com/docs/setup/linux
-	# ------- Add verification for the Microsoft repository
-	rpm --import https://packages.microsoft.com/keys/microsoft.asc
-	echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
-	packaging::install "https://packages.microsoft.com/config/rhel/$(if [ $SYS_OS_VERSION -lt 8 ]; then echo 7 ; elif [ $SYS_OS_VERSION -lt 9 ]; then echo 8; else echo 9; fi )/packages-microsoft-prod.rpm" "rpm"
-	# ====== Docker
-	# ------- Add verification for the Docker repository
-	dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
-	# ====== Update
-	packaging::update
-}
-
-fedora::cli() {
-	if packaging::install zsh ; then
-		chsh -s "/bin/zsh" $(id -nu 1000)
-		chsh -s "/bin/zsh" $(id -nu 0)
-		cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
-		cp "$_SCRIPT_DIR/profiles/zshrc" "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
-	fi
-	packaging::install zsh-autosuggestions
-	packaging::install zsh-syntax-highlighting
-	if packaging::install alacritty ; then
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty"; fi
-		cp "$_SCRIPT_DIR/profiles/alacritty.toml" "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty/alacritty.toml"
-		cp "$_SCRIPT_DIR/profiles/alacritty.toml" "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty/alacritty.toml"
-	fi
-	if packaging::install btop ; then
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/btop"; fi
-		cp "$_SCRIPT_DIR/profiles/btop.conf" "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
-		cp "$_SCRIPT_DIR/profiles/btop.conf" "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
-	fi
-	packaging::install neovim
-	packaging::install bat
-	packaging::install tldr
-	packaging::install cpufetch
-	packaging::install fastfetch
-	packaging::install 7z
-	packaging::install rclone
-	packaging::install mc
-	packaging::install trash-cli
-	packaging::install ascii
-	packaging::install xxd
-}
-
-fedora::dev() {
-	if packaging::install git ; then
-		git config --global init.defaultBranch main
-		git config --global user.name "kaos"
-		git config --global user.email "gustavo.s.aragao.2003@gmail.com"
-	fi
-	packaging::install code
-	packaging::install gh
-	packaging::install gcc
-	packaging::install rust
-	packaging::install python3
-	packaging::install powershell
-}
-
-fedora::gpu() {
-	# ------- Diferentiate Intel, AMD, NVIDIA
-	logger::info "Setting up GPU tools"
-	dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld && dnf swap -y mesa-vdpau-drivers mesa-vdpau-drivers-freeworld
-	dnf copr enable -y ilyaz/LACT # Check AMD OC
-	packaging::install vulkan-tools
-	packaging::install radeontop
-	packaging::install rocm 
-	packaging::install amd-gpu-firmware
-	packaging::install lact && sudo systemctl enable --now lactd
-}
-
-fedora::virt() { # QEMU/KVM, virt-manager, VirtualBox, Docker
-	logger::info "Setting up virtualization"
-	# ====== QEMU/KVM
-	packaging::install qemu-kvm
-	packaging::install libvirt
-	packaging::install edk2-ovmf
-	packaging::install swtpm
-	packaging::install qemu-img
-	packaging::install guestfs-tools
-	packaging::install libosinfo
-	packaging::install tuned
-	for drv in qemu interface network nodedev nwfilter secret storage; do \
-		systemctl enable virt${drv}d.service; \
-		systemctl enable virt${drv}d{,-ro,-admin}.socket; \
-	done
-	logger::info "QEMU/KVM validation"
-	virt-host-validate qemu
-	# ====== virt-manager
-	packaging::install virt-install
-	packaging::install virt-manager
-	packaging::install virt-viewer
-	# ====== VirtualBox
-	packaging::install virtualbox
-	packaging::install akmod-VirtualBox
-	packaging::install kernel-devel-$(uname -r)
-	akmods
-	systemctl restart vboxdrv.service
-	# ====== Docker
-	packaging::install docker.io
-	packaging::install docker-compose
-	packaging::install docker-cli
-	packaging::install docker-buildx
-	packaging::install docker-clean
-	packaging::install docker-doc
-	systemctl enable --now docker
-}
-
-fedora::vpn() {
-	packaging::install tor && systemctl enable --now tor 1> /dev/null
-	packaging::install openvpn
-	packaging::install proxychains-ng
-	all::vpn
-}
-
-fedora::texlive() {
-	packaging::install latexmk
-	packaging::install texlive-lastpage
-	packaging::install texlive-fancyhdr
-	packaging::install texlive-multirow
-	packaging::install texlive-enumitem
-	packaging::install texlive-mathtools
-	packaging::install texlive-amsfonts
-	packaging::install texlive-hyperref
-	packaging::install texlive-titlesec
-	packaging::install texlive-tkz-euclide
-}
-
-fedora::browsers() {
-	packaging::install brave-browser
-	packaging::install firefox
-	packaging::install lynx
-}
-
-fedora::general() {
-	packaging::install discord
-	packaging::install md.obsidian.Obsidian flatpak
-	packaging::install libreoffice
-	packaging::install qbittorrent
-	packaging::install openrgb
-	packaging::install qpdf
-	# d2
-	curl -fsSL https://d2lang.com/install.sh | sh -s --
-}
-
-fedora::media() {
-	packaging::install vlc
-	packaging::install gimp
-	packaging::install libavcodec-freeworld
-	packaging::install ffmpeg-free
-}
-
-fedora::gaming() {
-	packaging::install steam
-}
-
-chef::list_recipes() {
-	list=$(compgen -A function "$SYS_OS::" | cut -d : -f 3)
-}
-
-# ============================================================================
 # TUI
 # ============================================================================
 
@@ -1061,14 +875,15 @@ chef::list_recipes() {
 # ============================================================================
 # MAIN
 # ============================================================================
+# ============ Initializations
 # Configure logger
 LOG_LEVEL=${LOG_DEBUG}
 COLORIZE_MESSAGE=true
 
-# Main execution
+# ============ Main Execution
 main() {
-    # Detect system
-    sysinfo::detect_all
+	# Detect system
+	sysinfo::detect_all
 	sysinfo::print_summary
 
 	logger::info "Done"
@@ -1076,5 +891,5 @@ main() {
 
 # Run main if executed (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+	main "$@"
 fi
