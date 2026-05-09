@@ -815,7 +815,8 @@ packaging::update() {
 				logger::error "apt upgrade failed"
 				return 1
 			}
-			apt autoremove -y || logger::warning "apt autoremove failed"
+			apt autoremove -y 1> /dev/null || logger::warning "apt autoremove failed"
+			apt autoclean -y 1> /dev/null || logger::warning "apt autoclean failed"
 			;;
 		dnf)
 			dnf update -y || {
@@ -826,14 +827,14 @@ packaging::update() {
 				logger::error "dnf upgrade failed"
 				return 1
 			}
-			dnf autoremove -y || logger::warning "dnf autoremove failed"
+			dnf autoremove -y 1> /dev/null || logger::warning "dnf autoremove failed"
 			;;
 		yum)
 			yum update -y || {
 				logger::error "yum update failed"
 				return 1
 			}
-			yum autoremove -y || logger::warning "yum autoremove failed"
+			yum autoremove -y 1> /dev/null || logger::warning "yum autoremove failed"
 			;;
 		pacman)
 			pacman -Syu --noconfirm || {
@@ -890,7 +891,7 @@ main() {
 	sysinfo::require_network || return 1
 
 	# ================ Sources and repositories
-	# DNF plugins, RPM Fusion, Brave, Microsoft, Docker
+	# DNF plugins, RPM Fusion, Brave, LibreWolf, Microsoft, Docker
 	logger::info "Setting up sources"
 	# ====== DNF
 	packaging::install "dnf-plugins-core"
@@ -955,7 +956,7 @@ main() {
 	packaging::install xxd
 
 	# ================ Platform
-	logger::info "Setting up platform tools"
+	logger::info "Setting up platform"
 	# ====== Monitoring
 	if packaging::install btop ; then
 		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
@@ -977,6 +978,7 @@ main() {
 	packaging::install openrgb
 
 	# ================ Networking
+	logger::info "Setting up networking"
 	# ====== VPN
 	packaging::install tor && systemctl enable --now tor 1> /dev/null
 	packaging::install openvpn
@@ -989,6 +991,7 @@ main() {
 	packaging::install qbittorrent
 
 	# ================ Development tools
+	logger::info "Setting up development"
 	# ====== Git
 	if packaging::install git ; then
 		git config --global init.defaultBranch main
@@ -1064,8 +1067,13 @@ main() {
 	packaging::install docker-clean
 	packaging::install docker-doc
 	systemctl enable --now docker
+	# ====== Wine
+
+	# ================ Offensive Security
+	# hashcat, burp
 
 	# ================ General
+	logger::info "Setting up general"
 	# ====== Media
 	packaging::install vlc
 	packaging::install gimp

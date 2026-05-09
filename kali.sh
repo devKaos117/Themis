@@ -815,7 +815,8 @@ packaging::update() {
 				logger::error "apt upgrade failed"
 				return 1
 			}
-			apt autoremove -y || logger::warning "apt autoremove failed"
+			apt autoremove -y 1> /dev/null || logger::warning "apt autoremove failed"
+			apt autoclean -y 1> /dev/null || logger::warning "apt autoclean failed"
 			;;
 		dnf)
 			dnf update -y || {
@@ -826,14 +827,14 @@ packaging::update() {
 				logger::error "dnf upgrade failed"
 				return 1
 			}
-			dnf autoremove -y || logger::warning "dnf autoremove failed"
+			dnf autoremove -y 1> /dev/null || logger::warning "dnf autoremove failed"
 			;;
 		yum)
 			yum update -y || {
 				logger::error "yum update failed"
 				return 1
 			}
-			yum autoremove -y || logger::warning "yum autoremove failed"
+			yum autoremove -y 1> /dev/null || logger::warning "yum autoremove failed"
 			;;
 		pacman)
 			pacman -Syu --noconfirm || {
@@ -883,54 +884,75 @@ COLORIZE_MESSAGE=true
 # ============ Main Execution
 main() {
     # Detect system
-    sysinfo::detect_all
+	sysinfo::detect_all
 	sysinfo::print_summary
+
 	sysinfo::require_root || return 1
 	sysinfo::require_network || return 1
 
-	apt update && apt full-upgrade -y
-
-	apt install -y kali-linux-everything
-	sudo apt autoremove -y && sudo apt autoclean -y
-
-	# adding debian repos for tools not in kali
+	# ================ Sources and repositories
+	logger::info "Setting up sources"
+	# ====== Debian
 	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
+	# ====== Update
+	packaging::update
 
-	# altering sudoers
+	packaging::install kali-linux-everything
+
+	# ================ CLI
+	logger::info "Setting up CLI"
+	# ====== Shell
+	if packaging::install zsh ; then
+		chsh -s "/bin/zsh" $(id -nu 1000)
+		chsh -s "/bin/zsh" $(id -nu 0)
+		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/zshrc" -o /tmp/zshrc; then
+			cp "/tmp/zshrc" "$(getent passwd 1000 | cut -d : -f 6)/.zshrc" || logger::warning "Failed to set up user's .zshrc"
+			cp "/tmp/zshrc" "$(getent passwd 0 | cut -d : -f 6)/.zshrc" || logger::warning "Failed to set up root's .zshrc"
+			rm /tmp/zshrc
+		else
+			logger::warning "Failed to download .zshrc"
+		fi
+	fi
+	packaging::install zsh-autosuggestions
+	packaging::install zsh-syntax-highlighting
+	# ====== Terminal
+	if packaging::install alacritty ; then
+		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty"; fi
+		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty"; fi
+		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/alacritty.toml" -o /tmp/alacritty.toml; then
+			cp "/tmp/alacritty.toml" "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty/alacritty.toml" || logger::warning "Failed to set up user's alacritty.toml"
+			cp "/tmp/alacritty.toml" "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty/alacritty.toml" || logger::warning "Failed to set up root's alacritty.toml"
+			rm /tmp/alacritty.toml
+		else
+			logger::warning "Failed to download alacritty.toml"
+		fi
+	fi
+	# ====== Tools
+	packaging::install neovim
+	packaging::install bat
+	packaging::install tldr
+	packaging::install mc
+	packaging::install ascii
+	packaging::install asciinema
+	packaging::install xxd
+	# ====== Sudo
 	sed -i.bak 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo   ALL=(ALL:ALL) NOPASSWD:ALL/' /etc/sudoers && visudo -c
 
-	# ====== CLI
-	chsh -s "/bin/zsh" $(id -nu 1000)
-	chsh -s "/bin/zsh" $(id -nu 0)
-	curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/zshrc" > "$(getent passwd 1000 | cut -d : -f 6)/.zshrc"
-	curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/zshrc" > "$(getent passwd 0 | cut -d : -f 6)/.zshrc"
-
-	apt install -y zsh-autosuggestions zsh-syntax-highlighting
-	if apt install -y btop ; then
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config"; fi
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/btop"; fi
-		curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" > "$(getent passwd 1000 | cut -d : -f 6)/.config/btop/btop.conf"
-		curl -fsSL "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/btop.conf" > "$(getent passwd 0 | cut -d : -f 6)/.config/btop/btop.conf"
-	fi
-	apt install -y neovim  bat cpufetch fastfetch 7zip mc trash-cli ascii asciinema xxd # tldr rclone
-	# ====== VIRT
-	# docker
-	apt install -y docker.io docker-compose docker-cli docker-buildx docker-clean docker-doc
-	systemctl enable --now docker
-	# ====== VPN
-	apt install -y tor && systemctl enable --now tor
-	apt install -y openvpn proxychains-ng
-	# ====== Browser
-	apt install -y lynx
-	# ====== Misc
-	apt install -y chisel chisel-common-binaries ligolo-ng zaproxy seclists feroxbuster cupp
-	# configure snmp
+	# ================ Platform
+	logger::info "Setting up platform tools"
+	# ====== Monitoring
+	# ====== Information
+	packaging::install cpufetch
+	packaging::install fastfetch
+	# ====== Managing
+	packaging::install rclone
 	# ====== UI
 	# load panel
-	wget "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/Kaos_KaliPanel.tar.bz2" -O tmp && xfce4-panel-profiles load tmp && rm tmp
+	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2; then
+		xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2
+		rm /tmp/Kaos_KaliPanel.tar.bz2
+	fi
 	# alter workspace count
 	xfconf-query -c xfwm4 -p /general/workspace_count -n -t int -s 2
 	# disable screensaver
@@ -947,6 +969,71 @@ main() {
 	setxkbmap -layout br -variant abnt2
 	xfconf-query -c keyboard-layout -p /Default/XkbLayout -n -t string -s "br"
 
+	# ================ Networking
+	# ====== VPN
+	packaging::install wireguard
+	packaging::install wireguard-tools
+	packaging::install openvpn
+	packaging::install python3-proton-vpn-cli
+	packaging::install tor && systemctl enable --now tor 1> /dev/null
+	# ====== Tools
+
+	# ================ Development tools
+	# ====== Git
+	packaging::install git && git config --global init.defaultBranch main
+	# ====== Languages
+	packaging::install gcc
+	packaging::install rust
+	packaging::install python3
+	packaging::install powershell
+
+	# ================ GPU
+	# ------- Diferentiate Intel, AMD, NVIDIA
+	logger::info "Setting up GPU"
+	# ====== AMD
+
+	# ================ Virtualization
+	logger::info "Setting up virtualization"
+	# ====== Docker
+	packaging::install docker.io
+	packaging::install docker-compose
+	packaging::install docker-cli
+	packaging::install docker-buildx
+	packaging::install docker-clean
+	packaging::install docker-doc
+	systemctl enable --now docker
+	# ====== Wine
+
+	# ================ General
+	logger::info "Setting up general"
+	# ====== Browsers
+	packaging::install firefox
+	packaging::install chromium
+	packaging::install lynx
+	# ====== Tools
+	packaging::install 7zip
+
+	# ================ Security
+	logger::info "Setting up security tools"
+	# ====== osint
+	# ====== reconnaissance
+	packaging::install feroxbuster
+	packaging::install photon
+	packaging::install gospider
+	CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && /home/kali/.local/bin/katana || logger::warning "Failed to install katana"
+	# ====== assessment
+	packaging::install zaproxy
+	# ====== execution
+	# ====== access
+	packaging::install cupp
+	packaging::install seclists
+	# ====== maneuver
+	packaging::install proxychains-ng
+	packaging::install ligolo-ng
+	packaging::install chisel
+	packaging::install chisel-common-binaries
+
+	# ================ Done
 	logger::info "Done"
 }
 

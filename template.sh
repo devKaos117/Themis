@@ -815,7 +815,8 @@ packaging::update() {
 				logger::error "apt upgrade failed"
 				return 1
 			}
-			apt autoremove -y || logger::warning "apt autoremove failed"
+			apt autoremove -y 1> /dev/null || logger::warning "apt autoremove failed"
+			apt autoclean -y 1> /dev/null || logger::warning "apt autoclean failed"
 			;;
 		dnf)
 			dnf update -y || {
@@ -826,14 +827,14 @@ packaging::update() {
 				logger::error "dnf upgrade failed"
 				return 1
 			}
-			dnf autoremove -y || logger::warning "dnf autoremove failed"
+			dnf autoremove -y 1> /dev/null || logger::warning "dnf autoremove failed"
 			;;
 		yum)
 			yum update -y || {
 				logger::error "yum update failed"
 				return 1
 			}
-			yum autoremove -y || logger::warning "yum autoremove failed"
+			yum autoremove -y 1> /dev/null || logger::warning "yum autoremove failed"
 			;;
 		pacman)
 			pacman -Syu --noconfirm || {
