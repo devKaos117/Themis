@@ -1092,6 +1092,7 @@ main() {
 	packaging::install qpdf
 	# ====== Tools
 	packaging::install 7z
+	# f.lux flameshot obs audacity actiona
 	# ====== Gaming
 	packaging::install steam
 
