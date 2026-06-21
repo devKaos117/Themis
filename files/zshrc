@@ -315,7 +315,7 @@ transcript() { script -q -a "$(date +%FT%H:%M:%S)${1:+ $1}.script"; }
 # ====== Data encoding
 enCode() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n' | base64; }
 deCode() { printf '%s' "$1" | base64 -d | sed 's/../\\x&/g' | xargs -0 printf "%b"; }
-win_pw64() { echo -n "$1" | iconv -t UTF-16LE | base64 -w 0 }
+win_pw64() { cat /dev/stdin | iconv -t UTF-16LE | base64 -w 0 }
 
 # ====== I NEED COFFEE
 cafe() { while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe" }
