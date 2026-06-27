@@ -4,1040 +4,167 @@ set -euo pipefail	# Exit on error, undefined vars, pipe failures
 IFS=$'\n\t'			# Safer field splitting
 
 # ============================================================================
-# LOGGER
+# UTILITIES
 # ============================================================================
-# ============ Initializations
-# Log levels
-declare -r LOG_NONE=99
-declare -r LOG_CRITICAL=50
-declare -r LOG_ERROR=40
-declare -r LOG_WARNING=30
-declare -r LOG_INFO=20
-declare -r LOG_DEBUG=10
-declare -r LOG_NOTSET=0
+# ================ Custom colored output
+cprint() {
+	# Initializations
+	local msg="$1"
+	local default_color="\033[1;37m" # Bright White
+	local reset="\033[0m"
+	local pattern='(.*)[{][{]([A-Za-z]+):([^}]+)[}][}](.*)'
+	# Pattern matching
+	while [[ "$msg" =~ $pattern ]]; do
+		local prefix="${BASH_REMATCH[1]}"
+		local color="${BASH_REMATCH[2]}"
+		local text="${BASH_REMATCH[3]}"
+		local suffix="${BASH_REMATCH[4]}"
 
-declare -r -A _LOG_LEVEL_NAMES=(
-	[99]="NONE"
-	[50]="CRITICAL"
-	[40]="ERROR"
-	[30]="WARNING"
-	[20]="INFO"
-	[10]="DEBUG"
-)
-
-# Log custom format
-declare -r _TIMESTAMP_FORMAT="%H:%M:%S.%3N"
-
-declare -r -A _LOG_COLORS=(
-	[99]="\033[0m"			# Reset
-	[50]="\033[1;95m"		# Magenta
-	[40]="\033[1;91m"		# Red
-	[30]="\033[1;93m"		# Orange
-	[20]="\033[1;92m"		# Green
-	[10]="\033[1;94m"		# Blue
-	[0]="\033[96m"			# Cyan
-)
-
-# Default configuration values
-declare LOG_LEVEL=${LOG_INFO}
-declare COLORIZE_MESSAGE=true
-
-# ============ Private functions
-logger::_get_call_info() {
-	# Local declarations
-	local process_id
-	local frame
-	local caller_func
-	local caller_file
-
-	# Store process id
-	process_id="$$"
-
-	# Find caller function skipping internal logger
-	frame=1
-	caller_func="${FUNCNAME[$frame]}"
-
-	while [[ "$caller_func" =~ ^_?logger:: ]]; do
-		((frame++))
-		caller_func="${FUNCNAME[$frame]:-main}"
+		local ansi_color=""
+		
+		case "${color,,}" in
+			black)		ansi_color="\033[1;30m" ;;
+			white)		ansi_color="\033[1;37m" ;;
+			magenta)	ansi_color="\033[1;95m"	;;
+			red)		ansi_color="\033[1;91m" ;;
+			yellow)		ansi_color="\033[1;93m" ;;
+			green)		ansi_color="\033[1;92m" ;;
+			blue)		ansi_color="\033[1;94m" ;;
+			cyan)		ansi_color="\033[1;96m" ;;
+			*)			ansi_color="$default_color" ;; # Fallback for invalid colors
+		esac
+		# Build message
+		msg="${prefix}${ansi_color}${text}${reset}${default_color}${suffix}"
 	done
-
-	# Find caller file
-	caller_file="${BASH_SOURCE[$frame]}"
-	caller_file="${caller_file##*/}"	# basename
-
-	# Return call info
-	echo "${process_id}:${caller_file}:${caller_func}"
-}
-
-logger::_log() {
-	# Local declarations
-	local log_level
-	local message
-	local timestamp
-	local log_name
-	local call_info
-	local formatted_msg
-
-	# Function parameters
-	log_level="$1"
-	message="$2"
-
-	# Check log level
-	if [[ ${log_level} -lt ${LOG_LEVEL} ]]; then
-		return 0;
-	fi
-
-	# Gather metadata
-	timestamp="$(date +"${_TIMESTAMP_FORMAT}")"
-	log_name="${_LOG_LEVEL_NAMES[$log_level]}"
-	call_info="$(logger::_get_call_info)"
-
-	# Format message
-	if [[ $COLORIZE_MESSAGE = true ]]; then
-		# Colorized output
-		formatted_msg="[${_LOG_COLORS[0]}${timestamp}${_LOG_COLORS[99]}] [${_LOG_COLORS[0]}${call_info}${_LOG_COLORS[99]}] [${_LOG_COLORS[$log_level]}${log_name}${_LOG_COLORS[99]}] \033[1m$message${_LOG_COLORS[99]}"
-	else
-		formatted_msg="[${timestamp}] [${call_info}] [${log_name}] $message"
-	fi
-
-
-	# Console output
-	echo -e "$formatted_msg" >&2
-	return 0;
-}
-
-# ============ Logging functions
-logger::critical() {
-	logger::_log ${LOG_CRITICAL} "$1"
-}
-
-logger::error() {
-	logger::_log ${LOG_ERROR} "$1"
-}
-
-logger::warning() {
-	logger::_log ${LOG_WARNING} "$1"
-}
-
-logger::info() {
-	logger::_log ${LOG_INFO} "$1"
-}
-
-logger::debug() {
-	logger::_log ${LOG_DEBUG} "$1"
+	# Print message
+	echo -e "${default_color}${msg}${reset}"
 }
 
 # ============================================================================
 # SYSINFO
 # ============================================================================
-# ============ Initializations
-# System information storage
-declare OS=""				# Operating system ID (ubuntu, debian, arch, etc.)
-declare OS_UPSTREAM=""		# OS family (debian, rhel, arch)
-declare OS_VERSION=""		# OS version
-declare OS_CODENAME=""		# OS codename
-declare KERNEL=""			# Kernel version
-declare ARCH=""				# Architecture (x86_64, aarch64, etc.)
-declare PACKAGER=""			# Package manager (apt, dnf, pacman, etc.)
-declare INIT_SYSTEM=""		# Init system (systemd, openrc, sysvinit)
-declare IS_LIVE=0			# Running from live media (0=no, 1=yes)
-declare IS_VM=0				# Running in virtual machine
-declare IS_CONTAINER=0		# Running in container
-declare ONLINE=0			# Network connectivity
-declare IS_ROOT=0			# Running as root
-
-# ============ Private functions
-sysinfo::_detect_os() {
+# ================ Fetch current system information
+fetch_sysinfo() {
+	cprint "{{BLUE:[*] Fetching}} system information"
+	# ======== Initializations
+	local os_id=""
+	local os_upstream=""
+	local os_version=""
+	local os_codename=""
+	local os_kernel=""
+	local init_system=""
+	local kernel=""
+	local arch=""
+	local is_live=0
+	local is_virt=0
+	# ======== Fetch operating system information
 	if [[ -f /etc/os-release ]]; then
 		source /etc/os-release
 
-		OS="${ID}"
-		OS_UPSTREAM="${ID_LIKE:-${ID}}"
+		os_id="${ID}"
+		os_upstream="${ID_LIKE:-${ID}}"
 
 		# Version detection with fallbacks
 		if [[ -n "${VERSION_ID:-}" ]]; then
-			OS_VERSION="${VERSION_ID}"
+			os_version="${VERSION_ID}"
 		elif [[ -n "${VARIANT_ID:-}" ]]; then
-			OS_VERSION="${VARIANT_ID}"
+			os_version="${VARIANT_ID}"
 		elif [[ -n "${BUILD_ID:-}" ]]; then
-			OS_VERSION="${BUILD_ID}"
+			os_version="${BUILD_ID}"
 		else
-			OS_VERSION="rolling"
+			os_version="rolling"
 		fi
 
 		# Codename detection with fallbacks
 		if [[ -n "${VERSION_CODENAME:-}" ]]; then
-			OS_CODENAME="${VERSION_CODENAME}"
+			os_codename="${VERSION_CODENAME}"
 		elif [[ -n "${VARIANT:-}" ]]; then
-			OS_CODENAME="${VARIANT}"
+			os_codename="${VARIANT}"
 		elif [[ -n "${VERSION:-}" ]]; then
-			OS_CODENAME=$(echo "${VERSION}" | grep -oP '\(\K[^)]+' || echo "unknown")
+			os_codename=$(echo "${VERSION}" | grep -oP '\(\K[^)]+' || echo "unknown")
 		else
-			OS_CODENAME="unknown"
+			os_codename="unknown"
 		fi
 
-		logger::debug "OS: ${OS} ${OS_VERSION} (${OS_CODENAME})"
 	elif [[ -f /etc/lsb-release ]]; then
-		source /etc/lsb-release # Parse /etc/lsb-release
-		OS="${DISTRIB_ID,,}" # lowercase
-		OS_UPSTREAM="${OS}"
-		OS_VERSION="${DISTRIB_RELEASE:-unknown}"
-		OS_CODENAME="${DISTRIB_CODENAME:-unknown}"
-
-		logger::debug "OS (LSB): ${OS} ${OS_VERSION}"
+		source /etc/lsb-release 
+		os_id="${DISTRIB_ID,,}" 
+		os_upstream="${os_id}"
+		os_version="${DISTRIB_RELEASE:-unknown}"
+		os_codename="${DISTRIB_CODENAME:-unknown}"
 	else
-		logger::warning "Could not detect OS via standard methods"
-		OS="unknown"
-		OS_UPSTREAM="unknown"
-		OS_VERSION="unknown"
-		OS_CODENAME="unknown"
-
-	fi
-}
-
-sysinfo::_detect_kernel() {
-	KERNEL="$(uname -r)"
-	logger::debug "Kernel: ${KERNEL}"
-}
-
-sysinfo::_detect_arch() {
-	ARCH="$(uname -m)"
-	logger::debug "Architecture: ${ARCH}"
-}
-
-sysinfo::_detect_package_manager() {
-	if command -v apt &> /dev/null; then
-		PACKAGER="apt"
-	elif command -v dnf &> /dev/null; then
-		PACKAGER="dnf"
-	elif command -v yum &> /dev/null; then
-		PACKAGER="yum"
-	elif command -v pacman &> /dev/null; then
-		PACKAGER="pacman"
-	elif command -v yay &> /dev/null; then
-		PACKAGER="yay"
-	elif command -v apk &> /dev/null; then
-		PACKAGER="apk"
-	else
-		logger::warning "No supported package manager detected"
-		PACKAGER="unknown"
+		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to detect current operating system"
+		exit 1
 	fi
 
-	logger::debug "Package manager: ${PACKAGER}"
-}
-
-sysinfo::_detect_init_system() {
+	# ======== Fetch init system
 	if [[ -d /run/systemd/system ]]; then
-		INIT_SYSTEM="systemd"
+		init_system="systemd"
 	elif [[ -f /sbin/openrc ]]; then
-		INIT_SYSTEM="openrc"
+		init_system="openrc"
 	elif [[ -f /sbin/init && ! -L /sbin/init ]]; then
-		INIT_SYSTEM="sysvinit"
+		init_system="sysvinit"
 	else
-		INIT_SYSTEM="unknown"
+		init_system="unknown"
 	fi
 
-	logger::debug "Init system: ${INIT_SYSTEM}"
-}
+	# ======== Fetch kernel version
+	kernel="$(uname -r)"
 
-sysinfo::_detect_live_environment() {
-	# Check common live boot indicators
-	logger::debug "Looking for live environment indicators"
+	# ======== Fetch architecture
+	arch="$(uname -m)"
 
+	# ======== Detect live environment
 	if grep -q "boot=live" /proc/cmdline 2>/dev/null || grep -q "live" /proc/cmdline 2>/dev/null || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
-		IS_LIVE=1
-		logger::debug "Live environment detected"
+		is_live=1
 	fi
-}
 
-sysinfo::_detect_virtualization() {
-	# Check if running in VM
-	logger::debug "Looking for virtual environment indicators"
-
+	# ======== Detect virtual environment
 	if command -v systemd-detect-virt &> /dev/null; then
 		if [[ "$(systemd-detect-virt 2>/dev/null)" != "none" ]]; then
-			IS_VM=1
-			logger::debug "Virtualization detected: $(systemd-detect-virt)"
+			is_virt=1
+			cprint "\t{{BLUE:[+] Virtual Environment:}} $(systemd-detect-virt)"
 		fi
 	elif [[ -f /sys/class/dmi/id/product_name ]]; then
 		local product_name
 		product_name="$(cat /sys/class/dmi/id/product_name 2>/dev/null)"
 		if [[ "$product_name" =~ (VirtualBox|VMware|KVM|QEMU) ]]; then
-			IS_VM=1
-			logger::debug "VM detected: $product_name"
+			is_virt=1
+			cprint "\t{{BLUE:[+] Virtual Environment:}} $product_name"
 		fi
-	fi
-
-	# Check if running in container
-	logger::debug "Looking for containerized environment indicators"
-
-	if [[ -f /.dockerenv ]] || \
+	elif [[ -f /.dockerenv ]] || \
 		grep -q "docker\|lxc" /proc/1/cgroup 2>/dev/null; then
-		IS_CONTAINER=1
-		logger::debug "Container environment detected"
+		is_virt=1
+		cprint "\t{{BLUE:[+] Containerized Environment}}"
 	fi
-}
 
-sysinfo::_detect_network() {
-	# Simple connectivity check
-	if ping -c 1 -W 2 8.8.8.8 &> /dev/null || ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
-		ONLINE=1
-		logger::debug "Network connectivity confirmed"
-	else
-		logger::warning "No network connectivity detected"
-	fi
-}
-
-sysinfo::_detect_privileges() {
-	if [[ $EUID -eq 0 ]]; then
-		IS_ROOT=1
-		logger::debug "Running as root"
-	else
-		logger::debug "Running as user: $(whoami)"
-	fi
-}
-
-# ============ Public functions
-sysinfo::detect_all() {
-	logger::info "Starting full system detection..."
-
-	sysinfo::_detect_privileges
-	sysinfo::_detect_os
-	sysinfo::_detect_kernel
-	sysinfo::_detect_arch
-	sysinfo::_detect_package_manager
-	sysinfo::_detect_init_system
-	sysinfo::_detect_live_environment
-	sysinfo::_detect_virtualization
-	sysinfo::_detect_network
-
-	logger::info "System detection complete"
-}
-
-sysinfo::print_summary() {
-	logger::debug "Printing sysinfo summary"
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	echo "System Information"
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	echo "OS:			${OS} ${OS_VERSION} (${OS_CODENAME})"
-	echo "Kernel:			${KERNEL}"
-	echo "Architecture:		${ARCH}"
-	echo "Package Manager:	${PACKAGER}"
-	echo "Init System:		${INIT_SYSTEM}"
-	echo "Live Environment:	$([[ ${IS_LIVE} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Virtual Machine:	$([[ ${IS_VM} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Container:		$([[ ${IS_CONTAINER} -eq 1 ]] && echo 'Yes' || echo 'No')"
-	echo "Network:		$([[ ${ONLINE} -eq 1 ]] && echo 'Available' || echo 'unavailable')"
-	echo "Running as:		$([[ ${IS_ROOT} -eq 1 ]] && echo 'root' || echo "$(whoami)")"
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-}
-
-sysinfo::require_root() {
-	if [[ ${IS_ROOT} -ne 1 ]]; then
-		logger::error "This operation requires root privileges"
-		return 1
-	fi
-	return 0
-}
-
-sysinfo::require_network() {
-	if [[ ${ONLINE} -ne 1 ]]; then
-		logger::error "This operation requires network connectivity"
-		return 1
-	fi
-	return 0
-}
-
-sysinfo::is_debian_downstream() {
-	[[ "${OS_UPSTREAM}" =~ debian ]] && return 0 || return 1
-}
-
-sysinfo::is_arch_downstream() {
-	[[ "${OS_UPSTREAM}" =~ arch ]] && return 0 || return 1
-}
-
-sysinfo::is_redhat_downstream() {
-	[[ "${OS_UPSTREAM}" =~ (rhel|fedora) ]] && return 0 || return 1
-}
-
-sysinfo::has_cmd() {
-	command -v ${1} &> /dev/null
+	# ======== Build array
+	declare -g -A SYSINFO=(
+		["os"]="${os_id}"
+		["upstream"]="${os_upstream}"
+		["version"]="${os_version}"
+		["codename"]="${os_codename}"
+		["kernel"]="${kernel}"
+		["arch"]="${arch}"
+		["is_live"]="${is_live}"
+		["is_virt"]="${is_virt}"
+	)
 }
 
 # ============================================================================
-# PACKAGING
+# INITIALIZATIONS
 # ============================================================================
-# ============ Private functions
-packaging::_check_snap() {
-	# Check if snap is installed
-	if ! sysinfo::has_cmd "snap"; then
-		logger::warning "Snap not available, installing..."
-		packaging::install "snapd" || return 1
-	fi
-
-	# Check if snapd service is running
-	if ! systemctl is-active --quiet snapd.socket; then
-		logger::debug "Starting snapd service"
-		systemctl enable --now snapd.socket 1> /dev/null || {
-			logger::error "Failed to start snapd service"
-			return 1
-		}
-	fi
-
-	# Create classic snap symlink if needed
-	if [[ ! -L /snap ]]; then
-		logger::debug "Creating /snap symlink"
-		ln -s /var/lib/snapd/snap /snap 1> /dev/null || {
-			logger::error "Failed to create /snap symlink"
-			return 1
-		}
-	fi
-
-	return 0
-}
-
-packaging::_check_flatpak() {
-	# Check if flatpak is installed
-	if ! sysinfo::has_cmd "flatpak"; then
-		logger::warning "Flatpak not available, installing..."
-		packaging::install "flatpak" || return 1
-	fi
-
-	# Add flathub repository if not already added
-	if ! flatpak remote-list | grep -q flathub; then
-		logger::debug "Adding flathub repository"
-		flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 1> /dev/null || {
-			logger::error "Failed to add flathub repository"
-			return 1
-		}
-	fi
-
-	return 0
-}
-
-packaging::_is_installed() {
-	local package="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
-
-	# Auto-detect manager if not specified
-	if [[ "${manager}" == "auto" ]]; then
-		manager="${sysinfo::_PACKAGER}"
-	fi
-
-	case "${manager}" in
-		apt)
-			dpkg -l "${package}" 2>/dev/null | grep -q "^ii"
-			;;
-		dnf|yum)
-			rpm -q "${package}" &>/dev/null
-			;;
-		pacman)
-			pacman -Q "${package}" &>/dev/null
-			;;
-		# yay)
-		# 	...
-		# 	;;
-		# apk)
-		# 	...
-		# 	;;
-		snap)
-			packaging::_check_snap || return 1
-			snap list "${package}" &>/dev/null
-			;;
-		flatpak)
-			packaging::_check_flatpak || return 1
-			flatpak list 2> /dev/null | grep -q "${package}"
-			;;
-		*)
-			logger::warning "Cannot check package installation for ${manager}"
-			return 1
-			;;
-	esac
-}
-
-packaging::_is_available() {
-	local pkg="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
-
-	# Auto-detect manager if not specified
-	if [[ "${manager}" == "auto" ]]; then
-		manager="${sysinfo::_PACKAGER}"
-	fi
-
-	case "${manager}" in
-		apt)
-			apt show "${pkg}" &>/dev/null
-			;;
-		dnf)
-			dnf info "${pkg}" &>/dev/null
-			;;
-		rpm)
-			if [[ -f "$pkg" ]]; then
-				return 0
-			elif [[ "${pkg}" =~ ^(http|https|ftp):// ]] && sysinfo::require_network ; then
-				return 0
-			else
-				return 1
-			fi
-			;;
-		yum)
-			yum info "${pkg}" &>/dev/null
-			;;
-		pacman)
-			pacman -Si "${pkg}" &>/dev/null
-			;;
-		# yay)
-		# 	pacman -Si "${pkg}" &>/dev/null
-		# 	;;
-		# apk)
-		# 	pacman -Si "${pkg}" &>/dev/null
-		# 	;;
-		snap)
-			packaging::_check_snap || return 1
-			snap info "${pkg}" &>/dev/null
-			;;
-		flatpak)
-			packaging::_check_flatpak || return 1
-			flatpak search "${pkg}" | grep -i "${pkg}" && return 1 || return 0
-			;;
-		*)
-			logger::error "Unsuported package manager: ${sysinfo::_PACKAGER}"
-			return 1
-			;;
-	esac
-}
-
-# ============ Public functions
-packaging::install() {
-	local package="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
-
-	logger::debug "Installing package (${manager}): ${package}"
-
-	sysinfo::require_root || return 1
-	sysinfo::require_network || return 1
-
-	# Auto-detect manager if not specified
-	if [[ "${manager}" == "auto" ]]; then
-		manager="${sysinfo::_PACKAGER}"
-	fi
-
-	if packaging::_is_installed "${package}" "${manager}" ; then
-		logger::debug "Package '${package}' already installed"
-		return 0
-	fi
-
-	if ! packaging::_is_available "${package}" "${manager}" ; then
-		logger::error "Package '${package}' not available in repositories"
-		return 1
-	fi
-
-	case "${manager}" in
-		apt)
-			apt install -y "${package}" 1> /dev/null || {
-				logger::error "Failed to install ${package}"
-				return 1
-			}
-			;;
-		dnf)
-			dnf install -y "${package}" 1> /dev/null || {
-				logger::error "Failed to install ${package}"
-				return 1
-			}
-			;;
-		rpm)
-			rpm -U "${package}" 1> /dev/null || {
-				logger::error "Failed to install ${package}"
-				return 1
-			}
-			;;
-		yum)
-			yum install -y "${package}" 1> /dev/null || {
-				logger::error "Failed to install ${package}"
-				return 1
-			}
-			;;
-		pacman)
-			pacman -S --noconfirm "${package}" 1> /dev/null || {
-				logger::error "Failed to install ${package}"
-				return 1
-			}
-			;;
-		# yay)
-		# 	... || {
-		# 		logger::error "Failed to install ${package}"
-		# 		return 1
-		# 	}
-		# 	;;
-		# apk)
-		# 	... || {
-		# 		logger::error "Failed to install ${package}"
-		# 		return 1
-		# 	}
-		# 	;;
-		snap)
-			packaging::_check_snap || return 1
-			snap install "${package}" 1> /dev/null || {
-				logger::error "Failed to install snap ${package}"
-				return 1
-			}
-			;;
-		flatpak)
-			packaging::_check_flatpak || return 1
-			flatpak install -y flathub "${package}" 1> /dev/null || {
-				logger::error "Failed to install flatpak ${package}"
-				return 1
-			}
-			;;
-		*)
-			logger::error "Unsupported package manager: ${manager}"
-			return 1
-			;;
-	esac
-
-	logger::info "Successfully installed ${package}"
-	return 0
-}
-
-packaging::uninstall() {
-	local package="$1"
-	local manager="${2:-auto}" # auto, apt, dnf, rpm, yum, pacman, yay, apk, snap, flatpak
-	local purge="${3:-0}" # 1=purge, 0=keep configs
-
-	logger::debug "Uninstalling $(if [[ ${purge} -eq 1 ]] ;then echo "(purge)"; fi) package (${manager}): ${package}"
-
-	sysinfo::require_root || return 1
-
-	# Auto-detect manager if not specified
-	if [[ "${manager}" == "auto" ]]; then
-		manager="${sysinfo::_PACKAGER}"
-	fi
-
-	if ! packaging::_is_installed "${package}" "${manager}"; then
-		logger::debug "Package '${package}' is not installed"
-		return 0
-	fi
-
-	case "${manager}" in
-		apt)
-			if [[ ${purge} -eq 1 ]]; then
-				apt purge -y "${package}" 1> /dev/null || {
-					logger::error "Failed to purge ${package}"
-					return 1
-				}
-			else
-				apt remove -y "${package}" 1> /dev/null || {
-					logger::error "Failed to uninstall ${package}"
-					return 1
-				}
-			fi
-			# autoremove and autoclean
-			apt autoremove -y 1> /dev/null || logger::warning "apt autoremove failed"
-			apt autoclean -y 1> /dev/null || logger::warning "apt autoclean failed"
-			;;
-		dnf)
-			# Fetch config files if configured to purge
-			local config_files
-			if [[ ${purge} -eq 1 ]]; then
-				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
-			fi
-
-			dnf remove -y "${package}" 1> /dev/null || {
-				logger::error "Failed to uninstall ${package}"
-				return 1
-			}
-
-			# Purge
-			if [[ -n "${config_files}" ]]; then
-				echo "${config_files}" | while IFS= read -r file; do
-					if [[ -f "${file}" || -d "${file}" ]]; then
-						rm -rf "${file}" 1> /dev/null || logger::warning "Failed to remove ${file}"
-					fi
-				done
-			fi
-
-			# autoremove and clean
-			dnf autoremove -y 1> /dev/null || logger::warning "dnf autoremove failed"
-			dnf clean all 1> /dev/null || logger::warning "dnf clean failed"
-			;;
-		rpm)
-			# Fetch config files if configured to purge
-			local config_files
-			if [[ ${purge} -eq 1 ]]; then
-				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
-			fi
-
-			rpm -e "${package}" 1> /dev/null || {
-				logger::error "Failed to uninstall ${package}"
-				return 1
-			}
-
-			# Purge
-			if [[ -n "${config_files}" ]]; then
-				echo "${config_files}" | while IFS= read -r file; do
-					if [[ -f "${file}" || -d "${file}" ]]; then
-						rm -rf "${file}" 1> /dev/null || logger::warning "Failed to remove ${file}"
-					fi
-				done
-			fi
-			;;
-		yum)
-			# Fetch config files if configured to purge
-			local config_files
-			if [[ ${purge} -eq 1 ]]; then
-				config_files=$(rpm -ql "${package}" 2>/dev/null | grep "^/etc/" || true)
-			fi
-
-			yum remove -y "${package}" 1> /dev/null || {
-				logger::error "Failed to uninstall ${package}"
-				return 1
-			}
-
-			# Purge
-			if [[ -n "${config_files}" ]]; then
-				echo "${config_files}" | while IFS= read -r file; do
-					if [[ -f "${file}" || -d "${file}" ]]; then
-						rm -rf "${file}" 1> /dev/null || logger::warning "Failed to remove ${file}"
-					fi
-				done
-			fi
-
-			yum autoremove -y 1> /dev/null || logger::warning "yum autoremove failed"
-			yum clean all 1> /dev/null || logger::warning "yum clean failed"
-			;;
-		pacman)
-			if [[ ${purge} -eq 1 ]]; then
-				pacman -Rns --noconfirm "${package}" 1> /dev/null || {
-					logger::error "Failed to purge ${package}"
-					return 1
-				}
-			else
-				pacman -Rs --noconfirm "${package}" 1> /dev/null || {
-					logger::error "Failed to uninstall ${package}"
-					return 1
-				}
-			fi
-
-			# Clean package cache
-			if [[ ${purge} -eq 1 ]]; then
-				pacman -Sc --noconfirm 1> /dev/null || logger::warning "pacman cache clean failed"
-			fi
-			;;
-		yay)
-			if [[ ${purge} -eq 1 ]]; then
-				yay -Rns --noconfirm "${package}" 1> /dev/null || {
-					logger::error "Failed to purge ${package}"
-					return 1
-				}
-			else
-				yay -Rs --noconfirm "${package}" 1> /dev/null || {
-					logger::error "Failed to uninstall ${package}"
-					return 1
-				}
-			fi
-
-			# Clean cache
-			yay -Sc --noconfirm 1> /dev/null || logger::warning "yay cache clean failed"
-			;;
-		apk)
-			if [[ ${purge} -eq 1 ]]; then
-				apk del --purge "${package}" 1> /dev/null || {
-				logger::error "Failed to purge ${package}"
-				return 1
-			}
-			else
-				apk del "${package}" 1> /dev/null || {
-					logger::error "Failed to uninstall ${package}"
-					return 1
-				}
-			fi
-
-			# Clean cache
-			apk cache clean 1> /dev/null || logger::warning "apk cache clean failed"
-			;;
-		snap)
-			packaging::_check_snap || return 1
-
-			if [[ ${purge} -eq 1 ]]; then
-				snap remove --purge "${package}" 1> /dev/null || {
-					logger::error "Failed to purge snap ${package}"
-					return 1
-				}
-			else
-				snap remove "${package}" 1> /dev/null || {
-					logger::error "Failed to uninstall snap ${package}"
-					return 1
-				}
-			fi
-			;;
-		flatpak)
-			packaging::_check_flatpak || return 1
-
-			flatpak uninstall -y "${package}" 1> /dev/null || {
-				logger::error "Failed to uninstall flatpak ${package}"
-				return 1
-			}
-
-			if [[ ${purge} -eq 1 ]]; then
-				flatpak uninstall --delete-data -y "${package}" &>/dev/null || true
-
-				# Remove unused runtimes and dependencies
-				flatpak uninstall --unused --delete-data -y 1> /dev/null || logger::warning "flatpak cleanup failed"
-
-				# Repair and prune repo
-				flatpak repair --user 1> /dev/null || logger::warning "flatpak repair failed"
-			fi
-			;;
-		*)
-			logger::error "Unsupported package manager: ${manager}"
-			return 1
-			;;
-	esac
-
-	logger::info "Successfully uninstalled ${package}"
-	return 0
-}
-
-packaging::update() {
-	logger::debug "Updating system packages"
-
-	sysinfo::require_root || return 1
-	sysinfo::require_network || return 1
-
-	case "${sysinfo::_PACKAGER}" in
-		apt)
-			apt update -y || {
-				logger::error "apt update failed"
-				return 1
-			}
-			apt upgrade -y || {
-				logger::error "apt upgrade failed"
-				return 1
-			}
-			apt autoremove -y 1> /dev/null || logger::warning "apt autoremove failed"
-			apt autoclean -y 1> /dev/null || logger::warning "apt autoclean failed"
-			;;
-		dnf)
-			dnf update -y || {
-				logger::error "dnf update failed"
-				return 1
-			}
-			dnf upgrade -y || {
-				logger::error "dnf upgrade failed"
-				return 1
-			}
-			dnf autoremove -y 1> /dev/null || logger::warning "dnf autoremove failed"
-			;;
-		yum)
-			yum update -y || {
-				logger::error "yum update failed"
-				return 1
-			}
-			yum autoremove -y 1> /dev/null || logger::warning "yum autoremove failed"
-			;;
-		pacman)
-			pacman -Syu --noconfirm || {
-				logger::error "pacman update failed"
-				return 1
-			}
-			;;
-		# yay)
-		# 	...
-		# 	;;
-		# apk)
-		# 	...
-		# 	;;
-		*)
-			logger::error "Unsupported package manager: ${sysinfo::_PACKAGER}"
-			return 1
-			;;
-	esac
-
-	if sysinfo::has_cmd "snap"; then
-		logger::debug "Refreshing snaps"
-		snap refresh || logger::warning "snap refresh failed"
-	fi
-
-	if sysinfo::has_cmd "flatpak"; then
-		logger::debug "Updating flatpak packages"
-		flatpak update -y || logger::warning "flatpak update failed"
-	fi
-
-	logger::info "System updated"
-}
-
-# ============================================================================
-# TUI
-# ============================================================================
-
-
-
-# ============================================================================
-# MAIN
-# ============================================================================
-# ============ Initializations
-# Configure logger
-LOG_LEVEL=${LOG_DEBUG}
-COLORIZE_MESSAGE=true
-
-# ============ Main Execution
-main() {
-    # Detect system
-	sysinfo::detect_all
-	sysinfo::print_summary
-
-	sysinfo::require_root || return 1
-	sysinfo::require_network || return 1
-
-	# ================ Sources and repositories
-	logger::info "Setting up sources"
-	# ====== Debian
-	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
-	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
-	# ====== Update
-	packaging::update
-
-	packaging::install kali-linux-everything
-
-	# ================ CLI
-	logger::info "Setting up CLI"
-	# ====== Shell
-	if packaging::install zsh ; then
-		chsh -s "/bin/zsh" $(id -nu 1000)
-		chsh -s "/bin/zsh" $(id -nu 0)
-		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/zshrc" -o /tmp/zshrc; then
-			cp "/tmp/zshrc" "$(getent passwd 1000 | cut -d : -f 6)/.zshrc" || logger::warning "Failed to set up user's .zshrc"
-			cp "/tmp/zshrc" "$(getent passwd 0 | cut -d : -f 6)/.zshrc" || logger::warning "Failed to set up root's .zshrc"
-			rm /tmp/zshrc
-		else
-			logger::warning "Failed to download .zshrc"
-		fi
-	fi
-	packaging::install zsh-autosuggestions
-	packaging::install zsh-syntax-highlighting
-	# ====== Terminal
-	if packaging::install alacritty ; then
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty"; fi
-		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/alacritty.toml" -o /tmp/alacritty.toml; then
-			cp "/tmp/alacritty.toml" "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty/alacritty.toml" || logger::warning "Failed to set up user's alacritty.toml"
-			cp "/tmp/alacritty.toml" "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty/alacritty.toml" || logger::warning "Failed to set up root's alacritty.toml"
-			rm /tmp/alacritty.toml
-		else
-			logger::warning "Failed to download alacritty.toml"
-		fi
-	fi
-	# ====== Tools
-	packaging::install neovim
-	packaging::install bat
-	packaging::install tldr
-	packaging::install mc
-	packaging::install ascii
-	packaging::install asciinema
-	packaging::install xxd
-	# ====== Sudo
-	sed -i.bak 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo   ALL=(ALL:ALL) NOPASSWD:ALL/' /etc/sudoers && visudo -c
-
-	# ================ Platform
-	logger::info "Setting up platform tools"
-	# ====== Monitoring
-	# ====== Information
-	packaging::install cpufetch
-	packaging::install fastfetch
-	# ====== Managing
-	packaging::install rclone
-	# ====== UI
-	# load panel
-	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/profiles/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2; then
-		xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2
-		rm /tmp/Kaos_KaliPanel.tar.bz2
-	fi
-	# alter workspace count
-	xfconf-query -c xfwm4 -p /general/workspace_count -n -t int -s 2
-	# disable screensaver
-	xfconf-query -c xfce4-screensaver -p /saver/enabled -n -t bool -s false
-	# disable power management
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/blank-on-ac -n -t int -s 0
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -n -t int -s 0
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -n -t int -s 0
-	# disable lock screen
-	xfconf-query -c xfce4-session -p /general/LockCommand -n -t string -s ""
-	xfconf-query -c xfce4-screensaver -p /lock-screen/enabled -n -t bool -s false
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/lock-screen-suspend-hibernate -n -t bool -s false
-	# keyboard layout
-	setxkbmap -layout br -variant abnt2
-	xfconf-query -c keyboard-layout -p /Default/XkbLayout -n -t string -s "br"
-
-	# ================ Networking
-	# ====== VPN
-	packaging::install wireguard
-	packaging::install wireguard-tools
-	packaging::install openvpn
-	packaging::install python3-proton-vpn-cli
-	packaging::install tor && systemctl enable --now tor 1> /dev/null
-	# ====== Tools
-
-	# ================ Development tools
-	# ====== Git
-	packaging::install git && git config --global init.defaultBranch main
-	# ====== Languages
-	packaging::install gcc
-	packaging::install rust
-	packaging::install python3
-	packaging::install powershell
-
-	# ================ GPU
-	# ------- Diferentiate Intel, AMD, NVIDIA
-	logger::info "Setting up GPU"
-	# ====== AMD
-
-	# ================ Virtualization
-	logger::info "Setting up virtualization"
-	# ====== Docker
-	packaging::install docker.io
-	packaging::install docker-compose
-	packaging::install docker-cli
-	packaging::install docker-buildx
-	packaging::install docker-clean
-	packaging::install docker-doc
-	systemctl enable --now docker
-	# ====== Wine
-
-	# ================ General
-	logger::info "Setting up general"
-	# ====== Browsers
-	packaging::install firefox
-	packaging::install chromium
-	packaging::install lynx
-	# ====== Tools
-	packaging::install 7zip
-
-	# ================ Security
-	logger::info "Setting up security tools"
-	# ====== osint
-	# ====== reconnaissance
-	packaging::install feroxbuster
-	packaging::install photon
-	packaging::install gospider
-	CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && /home/kali/.local/bin/katana || logger::warning "Failed to install katana"
-	# ====== assessment
-	packaging::install zaproxy
-	# ====== execution
-	# ====== access
-	packaging::install cupp
-	packaging::install seclists
-	# ====== maneuver
-	packaging::install proxychains-ng
-	packaging::install ligolo-ng
-	packaging::install chisel
-	packaging::install chisel-common-binaries
-
-	# ================ Done
-	logger::info "Done"
-}
-
-# Run main if executed (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+# Network
+if ! ping -c 1 -W 2 8.8.8.8 &> /dev/null && ! ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
+	cprint "{{MAGENTA:[!] CRITICAL}} This script requires internet connection"
+	exit 1
 fi
+# Root
+if [[ $EUID -ne 0 ]]; then
+	cprint "{{MAGENTA:[!] CRITICAL}} This script requires elevated privileges"
+	exit 1
+fi
+# Tools
+
+# OS
+fetch_sysinfo

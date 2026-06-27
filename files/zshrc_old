@@ -1,0 +1,409 @@
+# ============================================================================
+# KAOS.zshrc
+# ============================================================================
+
+setopt autocd				# change directory just by typing its name
+setopt interactivecomments	# allow comments in interactive mode
+setopt magicequalsubst		# enable filename expansion for arguments of the form ‘anything=expression’
+setopt nonomatch			# hide error message if there is no match for the pattern
+setopt notify				# report the status of background jobs immediately
+setopt numericglobsort		# sort filenames numerically when it makes sense
+setopt promptsubst			# enable command substitution in prompt
+
+WORDCHARS='_-' # Don't consider certain characters part of the word
+
+# hide EOL sign ('%')
+PROMPT_EOL_MARK=""
+
+# configure key keybindings
+bindkey -e										  # emacs key bindings
+bindkey ' ' magic-space							  # do history expansion on space
+bindkey '^U' backward-kill-line					  # ctrl + U
+bindkey '^[[3;5~' kill-word						  # ctrl + Supr
+bindkey '^[[3~' delete-char						  # delete
+bindkey '^[[1;5C' forward-word					  # ctrl + ->
+bindkey '^[[1;5D' backward-word					  # ctrl + <-
+bindkey '^[[5~' beginning-of-buffer-or-history	  # page up
+bindkey '^[[6~' end-of-buffer-or-history		  # page down
+bindkey '^[[H' beginning-of-line				  # home
+bindkey '^[[F' end-of-line						  # end
+bindkey '^[[Z' undo								  # shift + tab undo last action
+
+# enable completion features
+autoload -Uz compinit
+compinit -d ~/.cache/zcompdump
+zstyle ':completion:*:*:*:*:*' menu select
+zstyle ':completion:*' auto-description 'specify: %d'
+zstyle ':completion:*' completer _expand _complete
+zstyle ':completion:*' format 'Completing %d'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' list-colors ''
+zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' rehash true
+zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+zstyle ':completion:*' use-compctl false
+zstyle ':completion:*' verbose true
+zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+
+# History configurations
+HISTFILE=~/.zsh_history
+HISTSIZE=1024
+SAVEHIST=2048
+setopt hist_expire_dups_first # delete duplicates first when HISTFILE size exceeds HISTSIZE
+setopt hist_ignore_dups		  # ignore duplicated commands history list
+setopt hist_ignore_space	  # ignore commands that start with space
+setopt hist_verify			  # show command with history expansion to user before running it
+
+# force zsh to show the complete history
+alias history="history 0"
+
+# configure `time` format
+TIMEFMT=$'\nreal\t%E\nuser\t%U\nsys\t%S\ncpu\t%P'
+
+# make less more friendly for non-text input files, see lesspipe(1)
+#[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+	debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+	xterm-color|*-256color) color_prompt=yes;;
+esac
+
+# Force colored prompt
+if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+else
+	color_prompt=
+fi
+
+configure_prompt() {
+	prompt_symbol=㉿
+	[ "$EUID" -eq 0 ] && prompt_symbol=💀 # Skull emoji for root terminal
+	case "$PROMPT_ALTERNATIVE" in
+		twoline)
+			PROMPT=$'%F{%(#.blue.green)}┌──${debian_chroot:+($debian_chroot)─}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))─}(%B%F{%(#.red.blue)}%n'$prompt_symbol$'%m%b%F{%(#.blue.green)})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%F{%(#.blue.green)}]\n└─%B%(#.%F{red}#.%F{blue}$)%b%F{reset} '
+			# Right-side prompt with exit codes and background processes
+			RPROMPT=$'%(?.. %? %F{red}%B⨯%b%F{reset})%(1j. %j %F{yellow}%B⚙%b%F{reset}.)'
+			;;
+		oneline)
+			PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{%(#.red.blue)}%n@%m%b%F{reset}:%B%F{%(#.blue.green)}%~%b%F{reset}%(#.#.$) '
+			RPROMPT=
+			;;
+		backtrack)
+			PROMPT=$'${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%B%F{red}%n@%m%b%F{reset}:%B%F{blue}%~%b%F{reset}%(#.#.$) '
+			RPROMPT=
+			;;
+	esac
+	unset prompt_symbol
+}
+
+# The following block is surrounded by two delimiters.
+# These delimiters must not be modified. Thanks.
+# START KALI CONFIG VARIABLES
+PROMPT_ALTERNATIVE=twoline
+NEWLINE_BEFORE_PROMPT=yes
+# STOP KALI CONFIG VARIABLES
+
+if [ "$color_prompt" = yes ]; then
+	# override default virtualenv indicator in prompt
+	VIRTUAL_ENV_DISABLE_PROMPT=1
+
+	configure_prompt
+
+	# enable syntax-highlighting
+	if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+		. /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+		ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
+		ZSH_HIGHLIGHT_STYLES[default]=none
+		ZSH_HIGHLIGHT_STYLES[unknown-token]=underline
+		ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=cyan,bold
+		ZSH_HIGHLIGHT_STYLES[suffix-alias]=fg=green,underline
+		ZSH_HIGHLIGHT_STYLES[global-alias]=fg=green,bold
+		ZSH_HIGHLIGHT_STYLES[precommand]=fg=green,underline
+		ZSH_HIGHLIGHT_STYLES[commandseparator]=fg=blue,bold
+		ZSH_HIGHLIGHT_STYLES[autodirectory]=fg=green,underline
+		ZSH_HIGHLIGHT_STYLES[path]=bold
+		ZSH_HIGHLIGHT_STYLES[path_pathseparator]=
+		ZSH_HIGHLIGHT_STYLES[path_prefix_pathseparator]=
+		ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue,bold
+		ZSH_HIGHLIGHT_STYLES[history-expansion]=fg=blue,bold
+		ZSH_HIGHLIGHT_STYLES[command-substitution]=none
+		ZSH_HIGHLIGHT_STYLES[command-substitution-delimiter]=fg=magenta,bold
+		ZSH_HIGHLIGHT_STYLES[process-substitution]=none
+		ZSH_HIGHLIGHT_STYLES[process-substitution-delimiter]=fg=magenta,bold
+		ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=green
+		ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=fg=green
+		ZSH_HIGHLIGHT_STYLES[back-quoted-argument]=none
+		ZSH_HIGHLIGHT_STYLES[back-quoted-argument-delimiter]=fg=blue,bold
+		ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=yellow
+		ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=yellow
+		ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=yellow
+		ZSH_HIGHLIGHT_STYLES[rc-quote]=fg=magenta
+		ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]=fg=magenta,bold
+		ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]=fg=magenta,bold
+		ZSH_HIGHLIGHT_STYLES[back-dollar-quoted-argument]=fg=magenta,bold
+		ZSH_HIGHLIGHT_STYLES[assign]=none
+		ZSH_HIGHLIGHT_STYLES[redirection]=fg=blue,bold
+		ZSH_HIGHLIGHT_STYLES[comment]=fg=black,bold
+		ZSH_HIGHLIGHT_STYLES[named-fd]=none
+		ZSH_HIGHLIGHT_STYLES[numeric-fd]=none
+		ZSH_HIGHLIGHT_STYLES[arg0]=fg=cyan
+		ZSH_HIGHLIGHT_STYLES[bracket-error]=fg=red,bold
+		ZSH_HIGHLIGHT_STYLES[bracket-level-1]=fg=blue,bold
+		ZSH_HIGHLIGHT_STYLES[bracket-level-2]=fg=green,bold
+		ZSH_HIGHLIGHT_STYLES[bracket-level-3]=fg=magenta,bold
+		ZSH_HIGHLIGHT_STYLES[bracket-level-4]=fg=yellow,bold
+		ZSH_HIGHLIGHT_STYLES[bracket-level-5]=fg=cyan,bold
+		ZSH_HIGHLIGHT_STYLES[cursor-matchingbracket]=standout
+	fi
+else
+	PROMPT='${debian_chroot:+($debian_chroot)}%n@%m:%~%(#.#.$) '
+fi
+unset color_prompt
+
+toggle_oneline_prompt(){
+	if [ "$PROMPT_ALTERNATIVE" = oneline ]; then
+		PROMPT_ALTERNATIVE=twoline
+	else
+		PROMPT_ALTERNATIVE=oneline
+	fi
+	configure_prompt
+	zle reset-prompt
+}
+zle -N toggle_oneline_prompt
+bindkey ^P toggle_oneline_prompt
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*|Eterm|aterm|kterm|gnome*|alacritty)
+	TERM_TITLE=$'\e]0;${debian_chroot:+($debian_chroot)}${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV))}%n@%m: %~\a'
+	;;
+*)
+	;;
+esac
+
+precmd() {
+	# Print the previously configured title
+	print -Pnr -- "$TERM_TITLE"
+
+	# Print a new line before the prompt, but only if it is not the first line
+	if [ "$NEWLINE_BEFORE_PROMPT" = yes ]; then
+		if [ -z "$_NEW_LINE_BEFORE_PROMPT" ]; then
+			_NEW_LINE_BEFORE_PROMPT=1
+		else
+			print ""
+		fi
+	fi
+}
+
+# enable color support of ls, less and man, and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+	test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+	export LS_COLORS="$LS_COLORS:ow=30;44:" # fix ls color for folders with 777 permissions
+
+	alias fgrep='fgrep --color=auto'
+	alias egrep='egrep --color=auto'
+	alias grep='grep --color=auto'
+	alias diff='diff --color=auto'
+	alias ip='ip --color=auto'
+
+	alias ls='ls -l --all --human-readable --context --color=auto'
+	alias b64='base64'
+	alias db64='base64 -d'
+
+	export LESS_TERMCAP_mb=$'\E[1;31m'	   # begin blink
+	export LESS_TERMCAP_md=$'\E[1;36m'	   # begin bold
+	export LESS_TERMCAP_me=$'\E[0m'		   # reset bold/blink
+	export LESS_TERMCAP_so=$'\E[01;33m'	   # begin reverse video
+	export LESS_TERMCAP_se=$'\E[0m'		   # reset reverse video
+	export LESS_TERMCAP_us=$'\E[1;32m'	   # begin underline
+	export LESS_TERMCAP_ue=$'\E[0m'		   # reset underline
+
+	# Take advantage of $LS_COLORS for completion as well
+	zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+	zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+fi
+
+# enable auto-suggestions based on the history
+if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
+	. /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+	# change suggestion color
+	ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#999'
+fi
+
+# enable command-not-found if installed
+if [ -f /etc/zsh_command_not_found ]; then
+	. /etc/zsh_command_not_found
+fi
+
+# ============ Custom functions and utilities
+# ====== Quick git push
+git_push() {
+	git add . && git commit -m "${1}" && git push origin main
+}
+
+#====== Port range batching
+port_batch() {
+	# ====== Initializations
+	declare -r TOTAL_PORTS=65536
+	declare -r MAX_PORT=65535
+
+	declare -r RED="\033[1;91m"
+	declare -r BLUE="\033[1;94m"
+	declare -r RESET="\033[0m"
+
+	TOTAL_BATCHES="$1"
+	BATCH_INDEX="$2"
+
+	# ====== Validation
+	if [[ "$#" -ne 2 ]]; then
+		echo "${BLUE}Usage:${RESET} $0 [NUMBER(batches)] [NUMBER(index)]"
+		echo "${BLUE}Description:${RESET} Divide the port range (0-65535) into NUMBER(batches) and return the range for the specified NUMBER(index)"
+		return 1
+	fi
+
+	# Ensure inputs are positive integers using regular expressions
+	if ! [[ "$TOTAL_BATCHES" =~ ^[0-9]+$ ]] || ! [[ "$BATCH_INDEX" =~ ^[0-9]+$ ]]; then
+		echo "${RED}Error:${RESET} Both arguments must be positive integers" >&2
+		return 1
+	fi
+
+	if (( TOTAL_BATCHES < 1 )); then
+		echo "${RED}Error:${RESET} Total batches must be at least 1" >&2
+		return 1
+	fi
+
+	if (( BATCH_INDEX < 1 || BATCH_INDEX > TOTAL_BATCHES )); then
+		echo "${RED}Error:${RESET} Batch index must be between 1 and ${TOTAL_BATCHES}" >&2
+		return 1
+	fi
+
+	# ====== Calculation
+	# Calculate base size of each batch and any leftover ports
+	BATCH_SIZE=$(( TOTAL_PORTS / TOTAL_BATCHES ))
+	REMAINDER=$(( TOTAL_PORTS % TOTAL_BATCHES ))
+
+	# Calculate start and end ports (0-indexed math translated to standard port numbers)
+	START_PORT=$(( (BATCH_INDEX - 1) * BATCH_SIZE ))
+	END_PORT=$(( START_PORT + BATCH_SIZE - 1 ))
+
+	# Distribute the remainder to the very last batch so no ports are missed
+	if (( BATCH_INDEX == TOTAL_BATCHES )); then
+		END_PORT=$(( END_PORT + REMAINDER ))
+	fi
+
+	# Safety cap (just in case)
+	if (( END_PORT > MAX_PORT )); then
+		END_PORT=$MAX_PORT
+	fi
+
+	# ====== Output
+	echo "${START_PORT}-${END_PORT}"
+}
+
+# ====== Scripting for terminal logging
+transcript() { script -q -a "$(date +%FT%H:%M:%S)${1:+ $1}.script"; }
+
+# ====== Data encoding
+enCode() { if [ -n "$1" ]; then printf '%s' "$1"; else cat /dev/stdin ; fi | od -An -tx1 | tr -d ' \n' | base64; }
+deCode() { if [ -n "$1" ]; then printf '%s' "$1"; else cat /dev/stdin ; fi | base64 -d | sed 's/../\\x&/g' | xargs -0 printf "%b"; }
+win_pw64() { if [ -n "$1" ]; then printf '%s' "$1"; else cat /dev/stdin ; fi | iconv -t UTF-16LE | base64 -w 0 }
+
+# ====== I NEED COFFEE
+cafe() { while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe" }
+
+# ====== go
+export PATH="$HOME/go/bin:$PATH"
+
+# ====== reset ssh
+regenSSH() {
+	# ====== Initializations
+	declare -r RESET="\033[0m"
+	declare -r RED="\033[1;91m"
+	declare -r ORANGE="\033[1;93m"
+	declare -r BLUE="\033[1;94m"
+
+	local ROOT_SSH=false
+
+	# Assert elevated privileges
+	if [[ $EUID -ne 0 ]]; then
+		echo -e "${RED}[\!] ERROR${RESET} This operation requires elevated privileges"
+		return 1
+	fi
+
+	# Check if Root SSH login is enabled
+	if grep -qE "^\s*PermitRootLogin\s+yes" /etc/ssh/sshd_config; then
+		echo -e "${ORANGE}[\!]${RESET} Root SSH login is currently ENABLED"
+		ROOT_SSH=true
+	fi
+
+	# ====== Machine Host Keys
+	echo -e "${BLUE}[*]${RESET} Regenerating SSH host keys"
+	rm -f /etc/ssh/ssh_host_*
+	DEBIAN_FRONTEND=noninteractive dpkg-reconfigure openssh-server && systemctl restart ssh
+
+	# Get the real user's home directory
+	local target_user="${SUDO_USER:-$(getent passwd 1000 | cut -d : -f 1)}" # # Fallback to UID 1000 if SUDO_USER isn't set
+	local user_home=$(getent passwd "${target_user}" | cut -d : -f 6)
+
+	if [[ -d "${user_home}" ]]; then
+		# Ensure .ssh directory permissions
+		mkdir -p "${user_home}/.ssh"
+		chmod 700 "${user_home}/.ssh"
+
+		# Generate the single pair of user ED25519 keys cleanly
+		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for ${target_user}..."
+		ssh-keygen -t ed25519 -N "" -f "${user_home}/.ssh/id_ed25519" -C "regenSSH" -q
+
+		# Fix ownership
+		chown -R "${target_user}:${target_user}" "${user_home}/.ssh"
+	else
+		echo -e "${RED}[\!]${RESET} Could not determine target user home directory"
+	fi
+
+	if [[ "${ROOT_SSH}" == true ]]; then
+		local root_home=$(getent passwd 0 | cut -d : -f 6)
+		# Ensure .ssh directory permissions
+		mkdir -p "${root_home}/.ssh"
+		chmod 700 "${root_home}/.ssh"
+
+		# Generate the single pair of user ED25519 keys cleanly
+		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for root..."
+		ssh-keygen -t ed25519 -N "" -f "${root_home}/.ssh/id_ed25519" -C "regenSSH" -q
+
+		# Fix ownership
+		chown -R "0:0" "${root_home}/.ssh"
+	fi
+}
+
+terminal_colors(){
+	echo -e "\n--- 16-Color ANSI Combination Matrix ---\n"
+
+	# Loop through Backgrounds: Standard (40-47), Bright (100-107), and Reset (49)
+	for bg in 49 {40..47} {100..107}; do
+		# Loop through Foregrounds: Standard (30-37), Bright (90-97)
+		for fg in {30..37} {90..97}; do
+			# Build the ANSI code string
+			code="${fg};${bg}m"
+
+			# Print a formatted block of text applying the color code
+			printf "\033[%s  %s  \033[0m" "$code" "$code"
+		
+		done
+		echo "" # Newline after each background row
+	done
+
+	echo -e "\nLegend: [Foreground];[Background]m\n"
+}
+
+# Force a new machine-id generation
+# sudo truncate -s 0 /etc/machine-id
+# sudo truncate -s 0 /var/lib/dbus/machine-id
