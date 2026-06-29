@@ -357,10 +357,11 @@ time {
 # ============================================================================
 	# ================ Security concerns
 	# ======== Change password
-	if [[ $SYSINFO["is_live"] == 0 ]]; then
+	if [[ $"{SYSINFO[is_live]}" == 0 ]]; then
 		cprint "{{BLUE:[*]}} Requesting new password"
-		local new_password=$(get_new_password)
+		new_password=$(get_new_password)
 		echo "${INVOKER}:${new_password}" | chpasswd
+		unset new_password
 	fi
 	# ======== Sudoers
 	cprint "{{BLUE:[*]}} Altering /etc/sudoers"
@@ -436,7 +437,7 @@ time {
 	install python3
 	install powershell
 	# ======= GPU
-	if [[ $SYSINFO["is_virt"] == 0 ]]; then
+	if [[ ${SYSINFO[is_virt]} == 0 ]]; then
 		cprint "{{BLUE:[*]}} Setting GPU"
 		# Intel
 		# AMD
