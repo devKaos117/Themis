@@ -61,7 +61,7 @@ fetch_sysinfo() {
 	local is_virt=0
 
 	cprint "{{BLUE:[*]}} Fetching system information"
-	
+
 	# ======== Fetch operating system information
 	if [[ -f /etc/os-release ]]; then
 		source /etc/os-release
@@ -92,8 +92,8 @@ fetch_sysinfo() {
 		fi
 
 	elif [[ -f /etc/lsb-release ]]; then
-		source /etc/lsb-release 
-		os_id="${DISTRIB_ID,,}" 
+		source /etc/lsb-release
+		os_id="${DISTRIB_ID,,}"
 		os_upstream="${os_id}"
 		os_version="${DISTRIB_RELEASE:-unknown}"
 		os_codename="${DISTRIB_CODENAME:-unknown}"
@@ -364,7 +364,7 @@ time {
 	fi
 	# ======== Sudoers
 	cprint "{{BLUE:[*]}} Altering /etc/sudoers"
-	sed -i.bak 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo   ALL=(ALL:ALL) NOPASSWD:ALL/' /etc/sudoers && visudo -c
+	sed -i.bak 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo ALL=(ALL:ALL) NOPASSWD:ALL/' /etc/sudoers && visudo -c
 	# ======== Force a new machine-id generation
 	cprint "{{BLUE:[*]}} Forcing new machine-id generation"
 	truncate -s 0 /etc/machine-id

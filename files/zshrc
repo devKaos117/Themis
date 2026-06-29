@@ -1,3 +1,161 @@
 # ============================================================================
 # KAOS.zshrc
 # ============================================================================
+
+
+export PATH="$HOME/go/bin:$PATH"
+# ================ Custom Functions
+# ====== Quick git push
+git_push() { git add . && git commit -m "${1}" && git push origin main }
+
+# ====== Scripting for terminal logging
+transcript() { script -q -a "$(date +%FT%H:%M:%S)${1:+ $1}.script"; }
+
+# ====== Data encoding
+enCode() { if [ -n "$1" ]; then printf '%s' "$1"; else cat /dev/stdin ; fi | od -An -tx1 | tr -d ' \n' | base64; }
+deCode() { if [ -n "$1" ]; then printf '%s' "$1"; else cat /dev/stdin ; fi | base64 -d | sed 's/../\\x&/g' | xargs -0 printf "%b"; }
+win_pw64() { if [ -n "$1" ]; then printf '%s' "$1"; else cat /dev/stdin ; fi | iconv -t UTF-16LE | base64 -w 0 }
+
+# ====== I NEED COFFEE
+cafe() { while [ TRUE ]; do head -n 100 /dev/urandom; sleep .05; done | hexdump -C | grep "ca fe" }
+
+# ====== Show ANSI colors
+terminal_colors(){
+	echo -e "\n--- 16-Color ANSI Combination Matrix ---\n"
+
+	# Loop through Backgrounds: Standard (40-47), Bright (100-107), and Reset (49)
+	for bg in 49 {40..47} {100..107}; do
+		# Loop through Foregrounds: Standard (30-37), Bright (90-97)
+		for fg in {30..37} {90..97}; do
+			# Build the ANSI code string
+			code="${fg};${bg}m"
+
+			# Print a formatted block of text applying the color code
+			printf "\033[%s  %s  \033[0m" "$code" "$code"
+		
+		done
+		echo "" # Newline after each background row
+	done
+
+	echo -e "\nLegend: [Foreground];[Background]m\n"
+}
+
+# ====== Port range batching
+port_batch() {
+	# ====== Initializations
+	declare -r TOTAL_PORTS=65536
+	declare -r MAX_PORT=65535
+
+	declare -r RED="\033[1;91m"
+	declare -r BLUE="\033[1;94m"
+	declare -r RESET="\033[0m"
+
+	TOTAL_BATCHES="$1"
+	BATCH_INDEX="$2"
+
+	# ====== Validation
+	if [[ "$#" -ne 2 ]]; then
+		echo "${BLUE}Usage:${RESET} $0 [NUMBER(batches)] [NUMBER(index)]"
+		echo "${BLUE}Description:${RESET} Divide the port range (0-65535) into NUMBER(batches) and return the range for the specified NUMBER(index)"
+		return 1
+	fi
+
+	# Ensure inputs are positive integers using regular expressions
+	if ! [[ "$TOTAL_BATCHES" =~ ^[0-9]+$ ]] || ! [[ "$BATCH_INDEX" =~ ^[0-9]+$ ]]; then
+		echo "${RED}Error:${RESET} Both arguments must be positive integers" >&2
+		return 1
+	fi
+
+	if (( TOTAL_BATCHES < 1 )); then
+		echo "${RED}Error:${RESET} Total batches must be at least 1" >&2
+		return 1
+	fi
+
+	if (( BATCH_INDEX < 1 || BATCH_INDEX > TOTAL_BATCHES )); then
+		echo "${RED}Error:${RESET} Batch index must be between 1 and ${TOTAL_BATCHES}" >&2
+		return 1
+	fi
+
+	# ====== Calculation
+	# Calculate base size of each batch and any leftover ports
+	BATCH_SIZE=$(( TOTAL_PORTS / TOTAL_BATCHES ))
+	REMAINDER=$(( TOTAL_PORTS % TOTAL_BATCHES ))
+
+	# Calculate start and end ports (0-indexed math translated to standard port numbers)
+	START_PORT=$(( (BATCH_INDEX - 1) * BATCH_SIZE ))
+	END_PORT=$(( START_PORT + BATCH_SIZE - 1 ))
+
+	# Distribute the remainder to the very last batch so no ports are missed
+	if (( BATCH_INDEX == TOTAL_BATCHES )); then
+		END_PORT=$(( END_PORT + REMAINDER ))
+	fi
+
+	# Safety cap (just in case)
+	if (( END_PORT > MAX_PORT )); then
+		END_PORT=$MAX_PORT
+	fi
+
+	# ====== Output
+	echo "${START_PORT}-${END_PORT}"
+}
+
+# ====== reset ssh
+regenSSH() {
+	# ====== Initializations
+	declare -r RESET="\033[0m"
+	declare -r RED="\033[1;91m"
+	declare -r YELLOW="\033[1;93m"
+	declare -r BLUE="\033[1;94m"
+
+	local ROOT_SSH=false
+
+	# Assert elevated privileges
+	if [[ $EUID -ne 0 ]]; then
+		echo -e "${RED}[\!] ERROR${RESET} This operation requires elevated privileges"
+		return 1
+	fi
+
+	# Check if Root SSH login is enabled
+	if grep -qE "^\s*PermitRootLogin\s+yes" /etc/ssh/sshd_config; then
+		echo -e "${YELLOW}[\!]${RESET} Root SSH login is currently ENABLED"
+		ROOT_SSH=true
+	fi
+
+	# ====== Machine Host Keys
+	echo -e "${BLUE}[*]${RESET} Regenerating SSH host keys"
+	rm -f /etc/ssh/ssh_host_*
+	DEBIAN_FRONTEND=noninteractive dpkg-reconfigure openssh-server && systemctl restart ssh
+
+	# Get the real user's home directory
+	local INVOKER="${SUDO_USER:-$(getent passwd 1000 | cut -d : -f 1)}" # Fallback to UID 1000 if SUDO_USER isn't set
+	local INVOKER_HOME=$(getent passwd "${INVOKER}" | cut -d : -f 6)
+
+	if [[ -d "${INVOKER_HOME}" ]]; then
+		# Ensure .ssh directory permissions
+		mkdir -p "${INVOKER_HOME}/.ssh"
+		chmod 700 "${INVOKER_HOME}/.ssh"
+
+		# Generate the single pair of user ED25519 keys cleanly
+		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for ${INVOKER}..."
+		ssh-keygen -t ed25519 -N "" -f "${INVOKER_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
+
+		# Fix ownership
+		chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}/.ssh"
+	else
+		echo -e "${RED}[\!]${RESET} Could not determine target user home directory"
+	fi
+
+	if [[ "${ROOT_SSH}" == true ]]; then
+		local ROOT_HOME=$(getent passwd 0 | cut -d : -f 6)
+		# Ensure .ssh directory permissions
+		mkdir -p "${ROOT_HOME}/.ssh"
+		chmod 700 "${ROOT_HOME}/.ssh"
+
+		# Generate the single pair of user ED25519 keys cleanly
+		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for root..."
+		ssh-keygen -t ed25519 -N "" -f "${ROOT_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
+
+		# Fix ownership
+		chown -R "0:0" "${ROOT_HOME}/.ssh"
+	fi
+}
