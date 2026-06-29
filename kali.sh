@@ -122,6 +122,8 @@ fetch_sysinfo() {
 	# ======== Detect live environment
 	if grep -q "boot=live" /proc/cmdline 2>/dev/null || grep -q "live" /proc/cmdline 2>/dev/null || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
 		is_live=1
+	else
+		is_live=0
 	fi
 
 	# ======== Detect virtual environment
@@ -141,6 +143,8 @@ fetch_sysinfo() {
 		grep -q "docker\|lxc" /proc/1/cgroup 2>/dev/null; then
 		is_virt=1
 		cprint "\t{{BLUE:[+]}} Containerized environment detected"
+	else
+		is_virt=0
 	fi
 
 	# ======== Build array
