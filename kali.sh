@@ -223,16 +223,18 @@ regenSSH() {
 	chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}/.ssh"
 
 	# ====== Root Keys
-	cprint "\t{{BLUE:[*]}} Root keys"
-	# Ensure .ssh directory permissions
-	mkdir -p "${ROOT_HOME}/.ssh"
-	chmod 700 "${ROOT_HOME}/.ssh"
+	if [[ $ROOT_SSH == true]]; then
+		cprint "\t{{BLUE:[*]}} Root keys"
+		# Ensure .ssh directory permissions
+		mkdir -p "${ROOT_HOME}/.ssh"
+		chmod 700 "${ROOT_HOME}/.ssh"
 
-	# Generate pair of ED25519 keys
-	ssh-keygen -t ed25519 -N "" -f "${ROOT_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
+		# Generate pair of ED25519 keys
+		ssh-keygen -t ed25519 -N "" -f "${ROOT_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
 
-	# Fix ownership
-	chown -R "0:0" "${ROOT_HOME}/.ssh"
+		# Fix ownership
+		chown -R "0:0" "${ROOT_HOME}/.ssh"
+	if
 }
 
 # ================ Install a package with apt
@@ -249,18 +251,18 @@ install() {
 	}
 
 	apt show "${package}" &>/dev/null || { # Not found in apt
-		cprint "\t{{RED:[!] ERROR:}} {{CYAN:${package}}} is not available in current repositories"
+		cprint "\t{{RED:[!] ERROR:}} The package is not available in current repositories"
 		return 1
 	}
 
 	# ======== Install
 	apt install -y "${package}" 1> /dev/null || {
-		cprint "\t{{RED:[!] ERROR:}} Failed installing {{CYAN:${package}}}"
+		cprint "\t{{RED:[!] ERROR:}} Package installation failed"
 		return 1
 	}
 
 	# ======== Log and end call
-	cprint "\t{{GREEN:[+]}} Successfully installed {{CYAN:${package}}}"
+	cprint "\t{{GREEN:[+]}} Package installed"
 	return 0
 }
 
@@ -279,7 +281,7 @@ uninstall() {
 
 	# ======== Uninstall
 	apt purge -y "${package}" 1> /dev/null || {
-		cprint "\t{{RED:[!] ERROR:}} Failed purging {{CYAN:${package}}}"
+		cprint "\t{{RED:[!] ERROR:}} Failed purging package"
 		return 1
 	}
 	# autoremove and autoclean
@@ -287,7 +289,7 @@ uninstall() {
 	apt autoclean -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	# ======== Log and end call
-	cprint "\t{{GREEN:[-]}} Successfully uninstalled ${package}"
+	cprint "\t{{GREEN:[-]}} Package uninstalled"
 	return 0
 }
 
@@ -361,7 +363,7 @@ time {
 # ============================================================================
 	# ================ Security concerns
 	# ======== Change password
-	if [[ $"{SYSINFO[is_live]}" == 0 ]]; then
+	if [[ ${SYSINFO[is_live]} == "0" ]]; then
 		cprint "{{BLUE:[*]}} Requesting new password"
 		new_password=$(get_new_password)
 		echo "${INVOKER}:${new_password}" | chpasswd
@@ -390,8 +392,6 @@ time {
 	update
 
 	# ================ Installing tools
-	cprint "{{BLUE:[*]}} Installing {{CYAN:kali-linux-everything}}"
-	install "kali-linux-everything"
 	# ======== CLI
 	cprint "{{BLUE:[*]}} Setting CLI tools"
 	# Shell

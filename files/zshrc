@@ -232,7 +232,7 @@ alias ls='ls -l --all --human-readable --context --color=auto'
 alias grep='grep --color=auto'
 alias diff='diff --color=auto'
 alias ip='ip --color=auto'
-alias b64='base64'
+alias b64='base64 -w 0'
 alias db64='base64 -d'
 
 # ================ Export
