@@ -372,6 +372,9 @@ time {
 	# ======== Generate new SSH keys
 	regenSSH
 
+	# ================ Creating custom dirs
+	mkdir -p "${INVOKER_HOME}"/tools
+
 	# ================ Sources and repositories
 	cprint "{{BLUE:[*]}} Setting up sources"
 	# ====== Debian
