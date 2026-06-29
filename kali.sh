@@ -223,7 +223,7 @@ regenSSH() {
 	chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}/.ssh"
 
 	# ====== Root Keys
-	if [[ $ROOT_SSH == true]]; then
+	if [[ $ROOT_SSH == true ]]; then
 		cprint "\t{{BLUE:[*]}} Root keys"
 		# Ensure .ssh directory permissions
 		mkdir -p "${ROOT_HOME}/.ssh"
@@ -234,7 +234,7 @@ regenSSH() {
 
 		# Fix ownership
 		chown -R "0:0" "${ROOT_HOME}/.ssh"
-	if
+	fi
 }
 
 # ================ Install a package with apt
@@ -436,7 +436,7 @@ time {
 	install git && git config --global init.defaultBranch main
 	# ====== Languages
 	install gcc
-	install rust
+	bash <(curl -sSf https://sh.rustup.rs) || cprint "\t{{RED:[!]}} Failed to install rust"
 	install golang-go
 	install golang-src
 	install python3
