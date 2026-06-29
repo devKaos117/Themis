@@ -369,7 +369,8 @@ time {
 	fi
 	# ======== Sudoers
 	cprint "{{BLUE:[*]}} Altering /etc/sudoers"
-	sed -i.bak 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo ALL=(ALL:ALL) NOPASSWD:ALL/' /etc/sudoers && visudo -c
+	echo "%sudo ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-nopasswd
+	chmod 0440 /etc/sudoers.d/99-nopasswd
 	# ======== Force a new machine-id generation
 	cprint "{{BLUE:[*]}} Forcing new machine-id generation"
 	truncate -s 0 /etc/machine-id
