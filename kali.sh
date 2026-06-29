@@ -256,7 +256,7 @@ install() {
 	}
 
 	# ======== Install
-	apt install -y "${package}" 1> /dev/null || {
+	DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
 		cprint "\t{{RED:[!] ERROR:}} Package installation failed"
 		return 1
 	}
@@ -297,11 +297,11 @@ uninstall() {
 update() {
 	cprint "{{BLUE:[*]}} Updating system packages"
 
-	apt update || {
+	apt-get update || {
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt update}} failed"
 		return 1
 	}
-	apt full-upgrade -y || {
+	apt-get full-upgrade -y || {
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
@@ -317,7 +317,12 @@ set_user_xfconf() {
 	local prop="$2"
 	local type="$3"
 	local val="$4"
-	sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+	local uid=$(id -u $INVOKER)
+	if [[ -S "/run/user/${uid}/bus" ]]; then
+		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+	else
+		sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+	fi
 }
 
 # ============================================================================
@@ -388,6 +393,8 @@ time {
 	# ====== Debian
 	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
+	# ====== Forcing needrestart to automatically restart services without asking
+	echo '$nrconf{restart} = "a";' | sudo tee /etc/needrestart/conf.d/99-force-restart.conf
 	# ====== Update
 	update
 
@@ -436,7 +443,7 @@ time {
 	install git && git config --global init.defaultBranch main
 	# ====== Languages
 	install gcc
-	bash <(curl -sSf https://sh.rustup.rs) || cprint "\t{{RED:[!]}} Failed to install rust"
+	bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!]}} Failed to install rust"
 	install golang-go
 	install golang-src
 	install python3
@@ -462,7 +469,7 @@ time {
 	# ======= General
 	cprint "{{BLUE:[*]}} Setting general tools"
 	# Browsers
-	install firefox
+	install firefox-esr
 	install chromium
 	install lynx
 	# Tools
@@ -474,7 +481,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
+	sudo -u kali CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install zaproxy
 	# execution
@@ -491,8 +498,13 @@ time {
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
-	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2; then
-		sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel" && rm /tmp/Kaos_KaliPanel.tar.bz2
+	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2 ; then
+		if [[ -S "/run/user/$(id -u $INVOKER)/bus" ]]; then
+			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u $INVOKER)/bus" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
+		else
+			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
+		fi
+		rm /tmp/Kaos_KaliPanel.tar.bz2
 	fi
 	# alter workspace count
 	set_user_xfconf "xfwm4" "/general/workspace_count" "int" 2
@@ -507,7 +519,7 @@ time {
 	# disable lock screen
 	set_user_xfconf "xfce4-session" "/general/LockCommand" "string" ""
 	# keyboard layout
-	localectl -layout br -variant abnt2
+	setxkbmap -layout br -variant abnt2
 	set_user_xfconf "keyboard-layout" "/Default/XkbLayout" "string" "br"
 	# ================ Done
 	cprint "{{GREEN:[*]}} Done"
