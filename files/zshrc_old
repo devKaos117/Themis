@@ -328,7 +328,7 @@ regenSSH() {
 	# ====== Initializations
 	declare -r RESET="\033[0m"
 	declare -r RED="\033[1;91m"
-	declare -r ORANGE="\033[1;93m"
+	declare -r YELLOW="\033[1;93m"
 	declare -r BLUE="\033[1;94m"
 
 	local ROOT_SSH=false
@@ -341,7 +341,7 @@ regenSSH() {
 
 	# Check if Root SSH login is enabled
 	if grep -qE "^\s*PermitRootLogin\s+yes" /etc/ssh/sshd_config; then
-		echo -e "${ORANGE}[\!]${RESET} Root SSH login is currently ENABLED"
+		echo -e "${YELLOW}[\!]${RESET} Root SSH login is currently ENABLED"
 		ROOT_SSH=true
 	fi
 
@@ -351,36 +351,36 @@ regenSSH() {
 	DEBIAN_FRONTEND=noninteractive dpkg-reconfigure openssh-server && systemctl restart ssh
 
 	# Get the real user's home directory
-	local target_user="${SUDO_USER:-$(getent passwd 1000 | cut -d : -f 1)}" # # Fallback to UID 1000 if SUDO_USER isn't set
-	local user_home=$(getent passwd "${target_user}" | cut -d : -f 6)
+	local INVOKER="${SUDO_USER:-$(getent passwd 1000 | cut -d : -f 1)}" # Fallback to UID 1000 if SUDO_USER isn't set
+	local INVOKER_HOME=$(getent passwd "${INVOKER}" | cut -d : -f 6)
 
-	if [[ -d "${user_home}" ]]; then
+	if [[ -d "${INVOKER_HOME}" ]]; then
 		# Ensure .ssh directory permissions
-		mkdir -p "${user_home}/.ssh"
-		chmod 700 "${user_home}/.ssh"
+		mkdir -p "${INVOKER_HOME}/.ssh"
+		chmod 700 "${INVOKER_HOME}/.ssh"
 
 		# Generate the single pair of user ED25519 keys cleanly
-		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for ${target_user}..."
-		ssh-keygen -t ed25519 -N "" -f "${user_home}/.ssh/id_ed25519" -C "regenSSH" -q
+		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for ${INVOKER}..."
+		ssh-keygen -t ed25519 -N "" -f "${INVOKER_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
 
 		# Fix ownership
-		chown -R "${target_user}:${target_user}" "${user_home}/.ssh"
+		chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}/.ssh"
 	else
 		echo -e "${RED}[\!]${RESET} Could not determine target user home directory"
 	fi
 
 	if [[ "${ROOT_SSH}" == true ]]; then
-		local root_home=$(getent passwd 0 | cut -d : -f 6)
+		local ROOT_HOME=$(getent passwd 0 | cut -d : -f 6)
 		# Ensure .ssh directory permissions
-		mkdir -p "${root_home}/.ssh"
-		chmod 700 "${root_home}/.ssh"
+		mkdir -p "${ROOT_HOME}/.ssh"
+		chmod 700 "${ROOT_HOME}/.ssh"
 
 		# Generate the single pair of user ED25519 keys cleanly
 		echo -e "${BLUE}[*]${RESET} Generating new SSH keys for root..."
-		ssh-keygen -t ed25519 -N "" -f "${root_home}/.ssh/id_ed25519" -C "regenSSH" -q
+		ssh-keygen -t ed25519 -N "" -f "${ROOT_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
 
 		# Fix ownership
-		chown -R "0:0" "${root_home}/.ssh"
+		chown -R "0:0" "${ROOT_HOME}/.ssh"
 	fi
 }
 
@@ -403,7 +403,3 @@ terminal_colors(){
 
 	echo -e "\nLegend: [Foreground];[Background]m\n"
 }
-
-# Force a new machine-id generation
-# sudo truncate -s 0 /etc/machine-id
-# sudo truncate -s 0 /var/lib/dbus/machine-id
