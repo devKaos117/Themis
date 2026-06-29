@@ -244,7 +244,7 @@ install() {
 		return 0
 	}
 
-	apt show "${pkg}" &>/dev/null || { # Not found in apt
+	apt show "${package}" &>/dev/null || { # Not found in apt
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:${package}}} is not available in current repositories"
 		return 1
 	}
@@ -291,18 +291,27 @@ uninstall() {
 update() {
 	cprint "{{BLUE:[*]}} Updating system packages"
 
-	apt update -y || {
+	apt update || {
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt update}} failed"
 		return 1
 	}
-	apt upgrade -y || {
-		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt upgrade}} failed"
+	apt full-upgrade -y || {
+		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
 	apt autoremove -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
 	apt autoclean -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	cprint "\t{{GREEN:[+]}} System updated"
+}
+
+# ================ Wrapper function execute xfconf-query
+set_user_xfconf() {
+	local channel="$1"
+	local prop="$2"
+	local type="$3"
+	local val="$4"
+	sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
 }
 
 # ============================================================================
@@ -328,7 +337,7 @@ time {
 	fi
 	# OS
 	fetch_sysinfo
-	if [[ SYSINFO["OS"] != "kali" ]]; then
+	if [[ "${SYSINFO[os]}" != "kali" ]]; then
 		cprint "{{MAGENTA:[!] CRITICAL:}} This script was designed for Kali Linux"
 		exit 1
 	fi
@@ -337,9 +346,9 @@ time {
 	declare -r INVOKER_HOME=$(getent passwd "${INVOKER}" | cut -d : -f 6)
 	declare -r ROOT_HOME=$(getent passwd 0 | cut -d : -f 6)
 
-	if [[ -d "${INVOKER_HOME}" ]]; then
+	if [[ ! -d "${INVOKER_HOME}" ]]; then
 		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to find invoking home directory"
-	elif [[ -d "${ROOT_HOME}" ]]; then
+	elif [[ ! -d "${ROOT_HOME}" ]]; then
 		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to find root home directory"
 	fi
 
@@ -351,7 +360,7 @@ time {
 	if [[ $SYSINFO["is_live"] == 0 ]]; then
 		cprint "{{BLUE:[*]}} Requesting new password"
 		local new_password=$(get_new_password)
-		echo "kali:${FINAL_PASSWORD}" | chpasswd
+		echo "${INVOKER}:${new_password}" | chpasswd
 	fi
 	# ======== Sudoers
 	cprint "{{BLUE:[*]}} Altering /etc/sudoers"
@@ -456,7 +465,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && $INVOKER_DIR/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
+	CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install zaproxy
 	# execution
@@ -474,24 +483,23 @@ time {
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
 	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2; then
-		xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2
-		rm /tmp/Kaos_KaliPanel.tar.bz2
+		sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel" && rm /tmp/Kaos_KaliPanel.tar.bz2
 	fi
 	# alter workspace count
-	xfconf-query -c xfwm4 -p /general/workspace_count -n -t int -s 2
+	set_user_xfconf "xfwm4" "/general/workspace_count" "int" 2
 	# disable screensaver
-	xfconf-query -c xfce4-screensaver -p /saver/enabled -n -t bool -s false
+	set_user_xfconf "xfce4-screensaver" "/saver/enabled" "bool" false
+	set_user_xfconf "xfce4-screensaver" "/lock-screen/enabled" "bool" false
 	# disable power management
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/blank-on-ac -n -t int -s 0
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -n -t int -s 0
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -n -t int -s 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/blank-on-ac" "int" 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-ac-sleep" "int" 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-ac-off" "int" 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/lock-screen-suspend-hibernate" "bool" false
 	# disable lock screen
-	xfconf-query -c xfce4-session -p /general/LockCommand -n -t string -s ""
-	xfconf-query -c xfce4-screensaver -p /lock-screen/enabled -n -t bool -s false
-	xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/lock-screen-suspend-hibernate -n -t bool -s false
+	set_user_xfconf "xfce4-session" "/general/LockCommand" "string" ""
 	# keyboard layout
-	setxkbmap -layout br -variant abnt2
-	xfconf-query -c keyboard-layout -p /Default/XkbLayout -n -t string -s "br"
+	localectl -layout br -variant abnt2
+	set_user_xfconf "keyboard-layout" "/Default/XkbLayout" "string" "br"
 	# ================ Done
 	cprint "{{GREEN:[*]}} Done"
 }
