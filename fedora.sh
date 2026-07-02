@@ -1079,6 +1079,8 @@ main() {
 	packaging::install gimp
 	packaging::install libavcodec-freeworld
 	packaging::install ffmpeg-free
+	packaging::install v4l-utils
+	packaging::install io.github.webcamoid.Webcamoid flatpak
 	# ====== Browsers
 	packaging::install brave-browser
 	packaging::install firefox

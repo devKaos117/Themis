@@ -256,7 +256,8 @@ install() {
 	}
 
 	# ======== Install
-	DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
+	# Force debian to suppress prompts from the debconf and automatically restart services without asking
+	DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
 		cprint "\t{{RED:[!] ERROR:}} Package installation failed"
 		return 1
 	}
@@ -301,7 +302,8 @@ update() {
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt update}} failed"
 		return 1
 	}
-	apt-get full-upgrade -y || {
+	# Force debian to suppress prompts from the debconf and automatically restart services without asking
+	DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade || {
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
@@ -393,8 +395,6 @@ time {
 	# ====== Debian
 	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
-	# ====== Forcing needrestart to automatically restart services without asking
-	echo '$nrconf{restart} = "a";' | sudo tee /etc/needrestart/conf.d/99-force-restart.conf
 	# ====== Update
 	update
 
@@ -472,6 +472,7 @@ time {
 	install firefox-esr
 	install chromium
 	install lynx
+	install torbrowser-launcher
 	# Tools
 	install 7zip
 	# ======= Security
