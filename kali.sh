@@ -387,9 +387,6 @@ time {
 	# ======== Generate new SSH keys
 	regenSSH
 
-	# ================ Creating custom dirs
-	mkdir -p "${INVOKER_HOME}"/tools
-
 	# ================ Sources and repositories
 	cprint "{{BLUE:[*]}} Setting up sources"
 	# ====== Debian
@@ -425,13 +422,13 @@ time {
 	install "xxd"
 	# ======== Platform
 	cprint "{{BLUE:[*]}} Setting platform tools"
-	# ====== Monitoring
-	# ====== Information
+	# Monitoring
+	# Information
 	install cpufetch
 	install fastfetch
 	# ======== Networking
 	cprint "{{BLUE:[*]}} Setting networking tools"
-	# ====== VPN
+	# VPN
 	install wireguard
 	install wireguard-tools
 	install openvpn
@@ -439,9 +436,9 @@ time {
 	install tor && systemctl enable --now tor 1> /dev/null
 	# ======== Development tools
 	cprint "{{BLUE:[*]}} Setting development tools"
-	# ====== Git
+	# Git
 	install git && git config --global init.defaultBranch main
-	# ====== Languages
+	# Languages
 	install gcc
 	bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!]}} Failed to install rust"
 	install golang-go
@@ -475,6 +472,11 @@ time {
 	install torbrowser-launcher
 	# Tools
 	install 7zip
+	install jwt-tools
+	install opensc
+	install pcscd && systemctl enable --now pcscd
+	install pcsc-tools
+	install vsmartcard-vpcd
 	# ======= Security
 	cprint "{{BLUE:[*]}} Setting security tools"
 	# osint
@@ -484,18 +486,36 @@ time {
 	install gospider
 	sudo -u kali CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
 	# assessment
+	install nuclei
 	install zaproxy
 	# execution
+	install dotdotpwn
+	install cmseek
+	install xsstrike
 	# access
 	install cupp
 	install seclists
-	# ====== maneuver
+	# maneuver
 	install proxychains-ng
 	install ligolo-ng
 	install chisel
 	install chisel-common-binaries
 	# reporting
 	install flameshot
+	# ================ Installing custom tools
+	cprint "{{BLUE:[*]}} Setting custom tools"
+	# Create dir
+	mkdir -p "${INVOKER_HOME}"/tools || cprint "\t{{ERROR:[!]}} Could not create tools directory"
+	# Fetch tools
+	git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}"/tools/WhatWaf
+	git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}"/tools/kiterunner
+	git clone https://github.com/santoru/shcheck "${INVOKER_HOME}"/tools/shcheck
+	git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}"/tools/jwt_tool
+	# Configure kiterunner
+	cd "${INVOKER_HOME}"/tools/kiterunner && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
+	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz && tar xzvf "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz -C "${INVOKER_HOME}"/tools/kiterunner/routes/ && rm "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz
+	for file in "${INVOKER_HOME}"/tools/kiterunner/routes/*.json ; do kr kb compile $file "$file.kite" ; done
+	chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}"/tools
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
