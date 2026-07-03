@@ -220,7 +220,7 @@ regenSSH() {
 	ssh-keygen -t ed25519 -N "" -f "${INVOKER_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
 
 	# Fix ownership
-	chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}/.ssh"
+	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/.ssh"
 
 	# ====== Root Keys
 	if [[ $ROOT_SSH == true ]]; then
@@ -319,10 +319,19 @@ set_user_xfconf() {
 	local prop="$2"
 	local type="$3"
 	local val="$4"
-	local uid=$(id -u $INVOKER)
-	if [[ -S "/run/user/${uid}/bus" ]]; then
-		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+	local dbus_addr=""
+
+	# Attempt to find the active D-Bus session for the user's GUI
+	local session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
+	if [[ -n "${session_pid}" ]]; then
+		dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" 2>/dev/null | cut -d= -f2- | tr -d '\0')
+	fi
+
+	# Perform xfconf-query
+	if [[ -n "${dbus_addr}" ]]; then
+		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
 	else
+		# Fallback if no active xfce session exists
 		sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
 	fi
 }
@@ -437,10 +446,10 @@ time {
 	# ======== Development tools
 	cprint "{{BLUE:[*]}} Setting development tools"
 	# Git
-	install git && git config --global init.defaultBranch main
+	install git && sudo -u "${INVOKER}" git config --global init.defaultBranch main
 	# Languages
 	install gcc
-	bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!]}} Failed to install rust"
+	sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!]}} Failed to install rust"
 	install golang-go
 	install golang-src
 	install python3
@@ -484,7 +493,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	sudo -u kali CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
+	sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install nuclei
 	install zaproxy
@@ -505,12 +514,12 @@ time {
 	# ================ Installing custom tools
 	cprint "{{BLUE:[*]}} Setting custom tools"
 	# Create dir
-	mkdir -p "${INVOKER_HOME}"/tools || cprint "\t{{ERROR:[!]}} Could not create tools directory"
+	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}"/tools || cprint "\t{{ERROR:[!]}} Could not create tools directory"
 	# Fetch tools
-	git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}"/tools/WhatWaf
-	git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}"/tools/kiterunner
-	git clone https://github.com/santoru/shcheck "${INVOKER_HOME}"/tools/shcheck
-	git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}"/tools/jwt_tool
+	sudo -u "${INVOKER}" git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}"/tools/WhatWaf
+	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}"/tools/kiterunner
+	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}"/tools/shcheck
+	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}"/tools/jwt_tool
 	# Configure kiterunner
 	cd "${INVOKER_HOME}"/tools/kiterunner && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
 	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz && tar xzvf "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz -C "${INVOKER_HOME}"/tools/kiterunner/routes/ && rm "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz
@@ -520,8 +529,14 @@ time {
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
 	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2 ; then
-		if [[ -S "/run/user/$(id -u $INVOKER)/bus" ]]; then
-			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u $INVOKER)/bus" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
+		local session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
+		local dbus_addr=""
+		if [[ -n "${session_pid}" ]]; then
+			dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" 2>/dev/null | cut -d= -f2- | tr -d '\0')
+		fi
+
+		if [[ -n "${dbus_addr}" ]]; then
+			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
 		else
 			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
 		fi

@@ -374,7 +374,7 @@ regenSSH() {
 		ssh-keygen -t ed25519 -N "" -f "${INVOKER_HOME}/.ssh/id_ed25519" -C "regenSSH" -q
 
 		# Fix ownership
-		chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}/.ssh"
+		chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/.ssh"
 	else
 		echo -e "${RED}[\!]${RESET} Could not determine target user home directory"
 	fi

@@ -987,6 +987,8 @@ main() {
 	sh <(curl -sSf "https://downloads.nordcdn.com/apps/linux/install.sh") -p nordvpn-gui -n || logger::error "Failed to install NordVPN GUI"
 	sh <(curl -sSf "https://downloads.nordcdn.com/apps/linux/install.sh") -n || logger::error "Failed to install NordVPN CLI"
 	usermod -aG nordvpn $(id -nu 1000)
+	# Proton
+	packaging::install protonvpn-cli
 	# ====== Tools
 	packaging::install qbittorrent
 
