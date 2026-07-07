@@ -412,7 +412,7 @@ time {
 		chsh -s "/bin/zsh" $INVOKER
 		chsh -s "/bin/zsh" $(id -nu 0)
 		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/zshrc" -o /tmp/zshrc; then
-			cp "/tmp/zshrc" "${INVOKER_HOME}/.zshrc" || cprint "\t{{YELLOW:[!]}} Failed to set up user .zshrc"
+			sudo -u "${INVOKER}" cp "/tmp/zshrc" "${INVOKER_HOME}/.zshrc" || cprint "\t{{YELLOW:[!]}} Failed to set up user .zshrc"
 			cp "/tmp/zshrc" "${ROOT_HOME}/.zshrc" || cprint "\t{{YELLOW:[!]}} Failed to set up root .zshrc"
 			rm /tmp/zshrc
 		else
@@ -493,7 +493,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version || cprint "\t{{RED:[!]}} Failed to install katana"
+	sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version 1> /dev/null 2>&1 || cprint "\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install nuclei
 	install zaproxy
@@ -524,13 +524,13 @@ time {
 	cd "${INVOKER_HOME}"/tools/kiterunner && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
 	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz && tar xzvf "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz -C "${INVOKER_HOME}"/tools/kiterunner/routes/ && rm "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz
 	for file in "${INVOKER_HOME}"/tools/kiterunner/routes/*.json ; do kr kb compile $file "$file.kite" ; done
-	chown -R "${INVOKER}:${INVOKER}" "${INVOKER_HOME}"/tools
+	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}"/tools
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
 	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2 ; then
-		local session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
-		local dbus_addr=""
+		session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
+		dbus_addr=""
 		if [[ -n "${session_pid}" ]]; then
 			dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" 2>/dev/null | cut -d= -f2- | tr -d '\0')
 		fi
@@ -541,6 +541,8 @@ time {
 			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
 		fi
 		rm /tmp/Kaos_KaliPanel.tar.bz2
+		unset session_pid
+		unset dbus_addr
 	fi
 	# alter workspace count
 	set_user_xfconf "xfwm4" "/general/workspace_count" "int" 2
