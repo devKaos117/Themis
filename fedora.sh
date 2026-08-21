@@ -991,6 +991,9 @@ main() {
 	packaging::install protonvpn-cli
 	# ====== Tools
 	packaging::install qbittorrent
+	# https://github.com/traviscross/mtr
+	# https://github.com/fujiapple852/trippy
+	# https://github.com/oetiker/SmokePing
 
 	# ================ Development tools
 	logger::info "Setting up development"
