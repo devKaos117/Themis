@@ -990,10 +990,15 @@ main() {
 	# Proton
 	packaging::install protonvpn-cli
 	# ====== Tools
-	packaging::install qbittorrent
+	# hping3
 	# https://github.com/traviscross/mtr
 	# https://github.com/fujiapple852/trippy
 	# https://github.com/oetiker/SmokePing
+	# wireshark
+	# tcpdump
+	# ====== Utilities
+	packaging::install qbittorrent
+	# flatpak install flathub org.localsend.localsend_app
 
 	# ================ Development tools
 	logger::info "Setting up development"
@@ -1075,7 +1080,7 @@ main() {
 	# ====== Wine
 
 	# ================ Offensive Security
-	# hashcat, burp
+	# hashcat, burp, nmap, httpx, rockyou.txt, seclists
 
 	# ================ General
 	logger::info "Setting up general"
@@ -1099,7 +1104,11 @@ main() {
 	packaging::install qpdf
 	# ====== Tools
 	packaging::install 7z
-	# f.lux flameshot obs audacity actiona
+	# f.lux
+	# flameshot
+	# obs
+	# audacity
+	# actiona
 	# ====== Gaming
 	packaging::install steam
 
