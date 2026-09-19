@@ -1042,7 +1042,7 @@ main() {
 	packaging::install lact && sudo systemctl enable --now lactd
 
 	# ================ Virtualization
-	# QEMU/KVM, virt-manager, VirtualBox, Docker
+	# QEMU/KVM, VMWare, Docker, Wine
 	logger::info "Setting up virtualization"
 	# ====== QEMU/KVM
 	packaging::install qemu-kvm
@@ -1060,15 +1060,18 @@ main() {
 	logger::info "QEMU/KVM validation"
 	virt-host-validate qemu
 	# ====== virt-manager
-	packaging::install virt-install
-	packaging::install virt-manager
-	packaging::install virt-viewer
+	# packaging::install virt-install
+	# packaging::install virt-manager
+	# packaging::install virt-viewer
 	# ====== VirtualBox
 	# packaging::install virtualbox
 	# packaging::install akmod-VirtualBox
 	# packaging::install kernel-devel-$(uname -r)
 	# akmods
 	# systemctl restart vboxdrv.service
+	# ====== VMWare
+	# packaging::install open-vm-tools
+	# kernel-headers kernel-devel gcc make
 	# ====== Docker
 	packaging::install docker.io
 	packaging::install docker-compose
@@ -1078,7 +1081,7 @@ main() {
 	packaging::install docker-doc
 	systemctl enable --now docker
 	# ====== Wine
-
+	# packaging::install wine
 	# ================ Offensive Security
 	# hashcat, burp, nmap, httpx, rockyou.txt, seclists
 
