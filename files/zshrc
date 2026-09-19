@@ -237,6 +237,9 @@ alias db64='base64 -d'
 
 # ================ Export
 export PATH="$HOME/go/bin:$HOME/.cargo/bin:$PATH"
+export KRB5CCNAME=/tmp/krb5cc_1000
+export SECLISTS="/usr/share/seclists"
+export ROCKYOU="/usr/share/wordlists/rockyou.txt"
 
 # ================ Custom Functions
 # ====== Quick git push

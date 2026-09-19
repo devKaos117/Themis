@@ -395,7 +395,6 @@ time {
 	truncate -s 0 /var/lib/dbus/machine-id
 	# ======== Generate new SSH keys
 	regenSSH
-
 	# ================ Sources and repositories
 	cprint "{{BLUE:[*]}} Setting up sources"
 	# ====== Debian
@@ -435,18 +434,33 @@ time {
 	# Information
 	install cpufetch
 	install fastfetch
+	# Smartcards and token suport
+	install opensc
+	install pcscd
+	install pcsc-tools
+	install vsmartcard-vpcd
+	# DEBUG HASHCAT
+	# sudo apt install rocm
+	# sudo apt-get install libhwloc-dev ocl-icd-dev ocl-icd-opencl-dev pocl-opencl-icd
 	# ======== Networking
 	cprint "{{BLUE:[*]}} Setting networking tools"
+	# Tools
+	install ncat
+	# rlwrap
 	# VPN
 	install wireguard
 	install wireguard-tools
 	install openvpn
 	install python3-proton-vpn-cli
 	install tor && systemctl enable --now tor 1> /dev/null
+	# Kerberos
+	install cntlm
+	install krb5-*
+	# Time
+	install ntpdate
+	install chronyd
 	# ======== Development tools
 	cprint "{{BLUE:[*]}} Setting development tools"
-	# Git
-	install git && sudo -u "${INVOKER}" git config --global init.defaultBranch main
 	# Languages
 	install gcc
 	sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!]}} Failed to install rust"
@@ -454,6 +468,12 @@ time {
 	install golang-src
 	install python3
 	install powershell
+	# Tools
+	install git && sudo -u "${INVOKER}" git config --global init.defaultBranch main
+	install just
+	install jq
+	install cmake
+	# upx uv
 	# ======= GPU
 	if [[ ${SYSINFO[is_virt]} == 0 ]]; then
 		cprint "{{BLUE:[*]}} Setting GPU"
@@ -501,6 +521,7 @@ time {
 	install dotdotpwn
 	install cmseek
 	install xsstrike
+	install mssqlpwner
 	# access
 	install cupp
 	install seclists
@@ -509,9 +530,24 @@ time {
 	install ligolo-ng
 	install chisel
 	install chisel-common-binaries
+	install peass
+	install crackmapexec
+	install mimikatz
+	install powershell-empire
+	install powersploit
+	install powercat
+	install shellter
+	install windows-privesc-check
+	install ncat-win32
+	install bloodyad
+	install rubeus
+	install sharphound
+	install bloodhound.py
+	install bloodhound
 	# reporting
 	install flameshot
 	# ================ Installing custom tools
+	# bloodhound snaffler inveigh potatoes
 	cprint "{{BLUE:[*]}} Setting custom tools"
 	# Create dir
 	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}"/tools || cprint "\t{{ERROR:[!]}} Could not create tools directory"
@@ -524,7 +560,51 @@ time {
 	cd "${INVOKER_HOME}"/tools/kiterunner && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
 	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz && tar xzvf "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz -C "${INVOKER_HOME}"/tools/kiterunner/routes/ && rm "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz
 	for file in "${INVOKER_HOME}"/tools/kiterunner/routes/*.json ; do kr kb compile $file "$file.kite" ; done
+	# ReconSpider.py
+	wget https://raw.githubusercontent.com/devKaos117/Metis/refs/heads/main/TA0043/ReconSpider.py -O "${INVOKER_HOME}"/tools/ReconSpider.py
+	# Bloodhound-legacy
+	wget https://github.com/SpecterOps/BloodHound-Legacy/releases/download/v4.3.1/BloodHound-linux-x64.zip -O "${INVOKER_HOME}"/tools/BloodHound-linux-x64.zip && unzip "${INVOKER_HOME}"/tools/BloodHound-linux-x64.zip -d "${INVOKER_HOME}"/tools/BloodHound && rm "${INVOKER_HOME}"/tools/BloodHound-linux-x64.zip
+	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}"/.config/bloodhound/ && wget https://raw.githubusercontent.com/hausec/Bloodhound-Custom-Queries/refs/heads/master/customqueries.json -O ~/.config/bloodhound/customqueries.json
+	# Adjust file owner
 	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}"/tools
+	# ================ Preparing share folder
+	mkdir -p ~/share
+	ln -s /usr/share/peass/linpeas/linpeas.sh ~/share/linpeas.sh
+	ln -s /usr/share/peass/winpeas/winPEAS.bat ~/share/winPEAS.bat
+	ln -s /usr/share/peass/winpeas/winPEAS.ps1 ~/share/winPEAS.ps1
+	ln -s /usr/share/peass/winpeas/winPEASx64.exe ~/share/winPEASx64.exe
+	ln -s /usr/share/peass/winpeas/winPEASx64_ofs.exe ~/share/winPEASx64_ofs.exe
+	ln -s /usr/share/peass/winpeas/winPEASx86.exe ~/share/winPEASx86.exe
+	ln -s /usr/share/peass/winpeas/winPEASx86_ofs.exe ~/share/winPEASx86_ofs.exe
+	ln -s /usr/share/windows-resources/mimikatz/x64/mimikatz.exe ~/share/mimikatz.exe
+	ln -s /usr/share/windows-resources/mimikatz/Win32/mimikatz.exe ~/share/mimikatz32.exe
+	ln -s /usr/share/windows-resources/rubeus/Rubeus.exe ~/share/Rubeus.exe
+	ln -s /usr/share/windows-resources/windows-privesc-check/windows-privesc-check2.exe ~/share/windows-privesc-check.exe
+	ln -s /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 ~/share/PowerUp.ps1
+	ln -s /usr/share/windows-resources/powersploit/Recon/PowerView.ps1 ~/share/PowerView.ps1
+	ln -s /usr/share/windows-resources/powersploit/Recon/Invoke-Portscan.ps1 ~/share/Invoke-Portscan.ps1
+	ln -s /usr/share/windows-resources/powercat/powercat.ps1 ~/share/powercat.ps1
+	ln -s /usr/share/windows-resources/ncat/ncat.exe ~/share/ncat.exe
+	ln -s /usr/share/windows-resources/binaries/chisel_1.12.0-rc3_windows_amd64.exe ~/share/chisel_x64.exe
+	ln -s /usr/share/windows-resources/binaries/plink.exe ~/share/plink.exe
+	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.exe ~/share/SharpHound-legacy.exe
+	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.ps1 ~/share/SharpHound-legacy.ps1
+	wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}"/share/antak.aspx && sed -i '12,13d' "${INVOKER_HOME}"/share/antak.aspx && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}"/share/antak.aspx && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}"/share/antak.aspx
+	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}"/share/GodPotato-NET4.exe
+	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}"/share/GodPotato-NET35.exe
+	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}"/share/GodPotato-NET2.exe
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_windows_amd64.zip -d "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64 && rm "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_windows_amd64.zip && mv "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64.exe && rm -rf "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O "${INVOKER_HOME}"/share/ligolo-ng_proxy_0.9.1_windows_amd64.zip
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O "${INVOKER_HOME}"/share/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
+	# Inveigh.exe
+	# SharpGPOAbuse.exe
+	# Snaffler.exe
+	# Certify.exe
+	# RunasCs.exe
+	# PsTools
+	# Adjust file owner
+	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}"/share
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
