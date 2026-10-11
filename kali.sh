@@ -436,9 +436,16 @@ time {
 	install fastfetch
 	# Smartcards and token suport
 	install opensc
-	install pcscd
+	install pcscd && systemctl enable --now pcscd
 	install pcsc-tools
 	install vsmartcard-vpcd
+	# GPU
+	if [[ ${SYSINFO[is_virt]} == 0 ]]; then
+		cprint "{{BLUE:[*]}} Setting GPU"
+		# Intel
+		# AMD
+		# NVIDIA
+	fi
 	# DEBUG HASHCAT
 	# sudo apt install rocm
 	# sudo apt-get install libhwloc-dev ocl-icd-dev ocl-icd-opencl-dev pocl-opencl-icd
@@ -474,13 +481,6 @@ time {
 	install jq
 	install cmake
 	# upx uv
-	# ======= GPU
-	if [[ ${SYSINFO[is_virt]} == 0 ]]; then
-		cprint "{{BLUE:[*]}} Setting GPU"
-		# Intel
-		# AMD
-		# NVIDIA
-	fi
 	# ======= Virtualization
 	cprint "{{BLUE:[*]}} Setting virtualization tools"
 	# Docker
@@ -501,11 +501,6 @@ time {
 	install torbrowser-launcher
 	# Tools
 	install 7zip
-	install jwt-tools
-	install opensc
-	install pcscd && systemctl enable --now pcscd
-	install pcsc-tools
-	install vsmartcard-vpcd
 	# ======= Security
 	cprint "{{BLUE:[*]}} Setting security tools"
 	# osint

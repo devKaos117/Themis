@@ -993,7 +993,6 @@ main() {
 	# hping3
 	# https://github.com/traviscross/mtr
 	# https://github.com/fujiapple852/trippy
-	# https://github.com/oetiker/SmokePing
 	# wireshark
 	# tcpdump
 	# ====== Utilities

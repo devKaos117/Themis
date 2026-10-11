@@ -277,6 +277,15 @@ terminal_colors(){
 	echo -e "\nLegend: [Foreground];[Background]m\n"
 }
 
+# ====== Search for Debian packages
+deb() {
+	if [ -z "$1" ]; then
+		echo "Usage: deb-search-web <search_term>"
+		return 1
+	fi
+	curl -s "https://sources.debian.org/api/search/$1/" | jq -r '.results.other[]?.name, .results.exact?.name' | sort -u
+}
+
 # ====== Port range batching
 port_batch() {
 	# ====== Initializations
