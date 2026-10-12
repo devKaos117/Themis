@@ -278,6 +278,8 @@ time {
 # MAIN
 # ============================================================================
 	# ================ Security concerns
+	# ====== Sudo
+	adduser "${INVOKER}" sudo
 	# ================ Sources and repositories
 	cprint "{{BLUE:[*]}} Setting up sources"
 	# ====== extrepo
@@ -319,16 +321,17 @@ time {
 	install "zsh-syntax-highlighting"
 	# ====== Terminal
 	if install alacritty ; then
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty"; fi
+		mkdir -p "${INVOKER_HOME}/.config/alacritty"
+		mkdir -p "${ROOT_HOME}/.config/alacritty"
 		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/alacritty.toml" -o /tmp/alacritty.toml; then
-			cp "/tmp/alacritty.toml" "$(getent passwd 1000 | cut -d : -f 6)/.config/alacritty/alacritty.toml" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up user's alacritty.toml"
-			cp "/tmp/alacritty.toml" "$(getent passwd 0 | cut -d : -f 6)/.config/alacritty/alacritty.toml" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up root's alacritty.toml"
+			cp "/tmp/alacritty.toml" "${INVOKER_HOME}/.config/alacritty/alacritty.toml" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up user alacritty.toml"
+			cp "/tmp/alacritty.toml" "${ROOT_HOME}/.config/alacritty/alacritty.toml" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up root alacritty.toml"
 			rm /tmp/alacritty.toml
 		else
 			cprint "\t{{RED:[!] ERROR:}} Failed to download alacritty.toml"
 		fi
 	fi
+	# tmux
 	# ====== Tools
 	install "neovim"
 	install "bat"
@@ -341,11 +344,11 @@ time {
 	cprint "{{BLUE:[*]}} Setting platform tools"
 	# ====== Monitoring
 	if install btop ; then
-		if [[ ! -d "$(getent passwd 1000 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 1000 | cut -d : -f 6)/.config/btop"; fi
-		if [[ ! -d "$(getent passwd 0 | cut -d : -f 6)/.config/btop" ]]; then mkdir "$(getent passwd 0 | cut -d : -f 6)/.config/btop"; fi
+		mkdir -p "${INVOKER_HOME}/.config/btop"
+		mkdir -p "${ROOT_HOME}/.config/btop"
 		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/btop.conf" -o /tmp/btop.conf; then
-			cp "/tmp/btop.conf" "$(getent passwd 1000 | cut -d : -f 6)/.config//btop/btop.conf" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up user's btop.conf"
-			cp "/tmp/btop.conf" "$(getent passwd 0 | cut -d : -f 6)/.config//btop/btop.conf" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up root's btop.conf"
+			cp "/tmp/btop.conf" "${INVOKER_HOME}/.config/btop/btop.conf" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up user btop.conf"
+			cp "/tmp/btop.conf" "${ROOT_HOME}/.config/btop/btop.conf" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up root btop.conf"
 			rm /tmp/btop.conf
 		else
 			cprint "\t{{RED:[!] ERROR:}} Failed to download btop.conf"
@@ -462,6 +465,7 @@ time {
 	install firefox-esr
 	install librewolf
 	install torbrowser-launcher
+	if [[ ! -f "${INVOKER_HOME}/Documents/bookmarks.html" ]]; then curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/bookmarks.html" -o "${INVOKER_HOME}/Documents/bookmarks.html" || cprint "\t{{RED:[!] ERROR:}} Failed to download bookmarks.html"; fi
 	# ====== Media
 	install vlc
 	install gimp
@@ -486,3 +490,12 @@ time {
 	# ====== Wordlists
 	install cupp
 	install seclists
+	# ====== Hardening
+	install debsecan
+	install auditd
+	install audispd-plugins
+	install ssh-audit
+	# https://github.com/netblue30/firejail
+	# https://github.com/CISOfy/lynis
+	# https://github.com/ossec/ossec-hids
+	# https://www.snort.org/

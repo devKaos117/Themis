@@ -4,7 +4,7 @@
 
 -	[About](#about)
 	-	[Summary](#about-summary)
-	-	[Features](#about-features)
+	-	[Debian](#debian)
 - [Usage](#usage)
 	-	[Setup](#usage-installation)
 -	[Technical Description](#technical-description)
@@ -17,14 +17,10 @@
 ### Summary <a name = "about-summary"></a>
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus placerat massa vitae orci gravida, in porttitor.
 
-### Features <a name = "about-features"></a>
+### Debian <a name = "debian"></a>
 
-- **Lorem ipsum**
-	- dolor sit amet
-	- consectetur adipiscing elit
-
-- **Phasellus placerat massa**
-	- vitae orci gravida
+https://www.xfce.org/
+https://github.com/ubuntu/lightdm
 
 ---
 
