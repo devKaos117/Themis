@@ -43,7 +43,7 @@ cprint() {
 
 # ================ Assert the availability of a command
 has_cmd() {
-	command -v ${1} &> /dev/null
+	command -v ${1}
 }
 
 # ================ Fetch current system information
@@ -98,7 +98,7 @@ fetch_sysinfo() {
 		os_version="${DISTRIB_RELEASE:-unknown}"
 		os_codename="${DISTRIB_CODENAME:-unknown}"
 	else
-		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to detect current operating system"
+		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to detect current operating system" >&3
 		exit 1
 	fi
 
@@ -120,27 +120,27 @@ fetch_sysinfo() {
 	arch="$(uname -m)"
 
 	# ======== Detect live environment
-	if grep -q "boot=live" /proc/cmdline 2>/dev/null || grep -q "live" /proc/cmdline 2>/dev/null || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
+	if grep -q "boot=live" /proc/cmdline || grep -q "live" /proc/cmdline || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
 		is_live=1
 	else
 		is_live=0
 	fi
 
 	# ======== Detect virtual environment
-	if command -v systemd-detect-virt &> /dev/null; then
-		if [[ "$(systemd-detect-virt 2>/dev/null)" != "none" ]]; then
+	if command -v systemd-detect-virt; then
+		if [[ "$(systemd-detect-virt)" != "none" ]]; then
 			is_virt=1
 			cprint "\t{{BLUE:[+]}} Virtual environment detected: $(systemd-detect-virt)"
 		fi
 	elif [[ -f /sys/class/dmi/id/product_name ]]; then
 		local product_name
-		product_name="$(cat /sys/class/dmi/id/product_name 2>/dev/null)"
+		product_name="$(cat /sys/class/dmi/id/product_name)"
 		if [[ "$product_name" =~ (VirtualBox|VMware|KVM|QEMU) ]]; then
 			is_virt=1
 			cprint "\t{{BLUE:[+]}} Virtual environment detected: $product_name"
 		fi
 	elif [[ -f /.dockerenv ]] || \
-		grep -q "docker\|lxc" /proc/1/cgroup 2>/dev/null; then
+		grep -q "docker\|lxc" /proc/1/cgroup; then
 		is_virt=1
 		cprint "\t{{BLUE:[+]}} Containerized environment detected"
 	else
@@ -245,19 +245,19 @@ install() {
 	cprint "{{BLUE:[*]}} Installing {{CYAN:${package}}}"
 
 	# ======== Verifications
-	dpkg -l "${package}" 2>/dev/null | grep -q "^ii" && { # Already installed
+	dpkg -l "${package}" | grep -q "^ii" && { # Already installed
 		cprint "\t\t{{GREEN:[+]}} Package already installed"
 		return 0
 	}
 
-	apt show "${package}" &>/dev/null || { # Not found in apt
+	apt show "${package}" || { # Not found in apt
 		cprint "\t\t{{RED:[!] ERROR:}} The package is not available in current repositories"
 		return 1
 	}
 
 	# ======== Install
 	# Force debian to suppress prompts from the debconf and automatically restart services without asking
-	DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
+	DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" || {
 		cprint "\t\t{{RED:[!] ERROR:}} Package installation failed"
 		return 1
 	}
@@ -275,19 +275,19 @@ uninstall() {
 	cprint "{{BLUE:[*]}} Uninstalling {{CYAN:${package}}}"
 
 	# ======== Verifications
-	dpkg -l "${package}" 2>/dev/null | grep -q "^ii" || { # Not installed
+	dpkg -l "${package}" | grep -q "^ii" || { # Not installed
 		cprint "\t\t{{GREEN:[-]}} Package not found"
 		return 0
 	}
 
 	# ======== Uninstall
-	apt purge -y "${package}" 1> /dev/null || {
+	apt purge -y "${package}" || {
 		cprint "\t\t{{RED:[!] ERROR:}} Failed purging package"
 		return 1
 	}
 	# autoremove and autoclean
-	apt autoremove -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	# ======== Log and end call
 	cprint "\t\t{{GREEN:[-]}} Package uninstalled"
@@ -307,8 +307,8 @@ update() {
 		cprint "\t\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
-	apt autoremove -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	cprint "\t\t{{GREEN:[+]}} System updated"
 }
@@ -324,7 +324,7 @@ set_user_xfconf() {
 	# Attempt to find the active D-Bus session for the user's GUI
 	local session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
 	if [[ -n "${session_pid}" ]]; then
-		dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" 2>/dev/null | cut -d= -f2- | tr -d '\0')
+		dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" | cut -d= -f2- | tr -d '\0')
 	fi
 
 	# Perform xfconf-query
@@ -340,6 +340,9 @@ set_user_xfconf() {
 # INITIALIZATIONS
 # ============================================================================
 time {
+	# ======== Redirect output to log file
+	exec 3> >(tee -a /tmp/setup.log)
+	exec > >(sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g' >> /tmp/setup.log) 2>&1
 	# ======== Requirements
 	# Execution call
 	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -348,7 +351,7 @@ time {
 	fi
 	# Tools
 	# Network
-	if ! ping -c 1 -W 2 8.8.8.8 &> /dev/null && ! ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
+	if ! ping -c 1 -W 2 8.8.8.8 && ! ping -c 1 -W 2 1.1.1.1; then
 		cprint "{{MAGENTA:[!] CRITICAL:}} This script requires internet connection"
 		exit 1
 	fi
@@ -458,7 +461,7 @@ time {
 	install wireguard-tools
 	install openvpn
 	install python3-proton-vpn-cli
-	install tor && systemctl enable --now tor 1> /dev/null
+	install tor && systemctl enable --now tor
 	# Kerberos
 	install cntlm
 	install krb5-*
@@ -507,7 +510,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	cprint "{{BLUE:[*]}} Installing {{CYAN:katana}}" && sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version &> /dev/null || cprint "\t\t{{RED:[!]}} Failed to install katana"
+	cprint "{{BLUE:[*]}} Installing {{CYAN:katana}}" && sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version || cprint "\t\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install nuclei
 	install zaproxy
@@ -606,7 +609,7 @@ time {
 		session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
 		dbus_addr=""
 		if [[ -n "${session_pid}" ]]; then
-			dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" 2>/dev/null | cut -d= -f2- | tr -d '\0')
+			dbus_addr=$(grep -z "^DBUS_SESSION_BUS_ADDRESS=" "/proc/${session_pid}/environ" | cut -d= -f2- | tr -d '\0')
 		fi
 
 		if [[ -n "${dbus_addr}" ]]; then
