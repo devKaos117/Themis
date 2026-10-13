@@ -626,11 +626,18 @@ time {
 	set_user_xfconf "xfce4-screensaver" "/lock-screen/enabled" "bool" false
 	# disable power management
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/blank-on-ac" "int" 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/blank-on-battery" "int" 0
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-ac-sleep" "int" 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-battery-sleep" "int" 0
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-ac-off" "int" 0
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-battery-off" "int" 0
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/lock-screen-suspend-hibernate" "bool" false
+	# disable DPMS and force presentation mode
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-enabled" "bool" false
+	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/presentation-mode" "bool" true
 	# disable lock screen
 	set_user_xfconf "xfce4-session" "/general/LockCommand" "string" ""
+	set_user_xfconf "xfce4-session" "/shutdown/LockScreen" "bool" false
 	# keyboard layout
 	setxkbmap -layout br -variant abnt2
 	set_user_xfconf "keyboard-layout" "/Default/XkbLayout" "string" "br"
