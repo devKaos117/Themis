@@ -38,7 +38,7 @@ cprint() {
 		msg="${prefix}${ansi_color}${text}${reset}${default_color}${suffix}"
 	done
 	# ======== Print text
-	echo -e "${default_color}${msg}${reset}"
+	echo -e "${default_color}${msg}${reset}" >&3
 }
 
 # ================ Assert the availability of a command
@@ -98,7 +98,7 @@ fetch_sysinfo() {
 		os_version="${DISTRIB_RELEASE:-unknown}"
 		os_codename="${DISTRIB_CODENAME:-unknown}"
 	else
-		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to detect current operating system" >&3
+		cprint "{{MAGENTA:[!]}} Failed to detect current operating system" >&3
 		exit 1
 	fi
 
@@ -167,23 +167,23 @@ get_new_password() {
 	local pass1
 	local pass2
 	# ======== Prompt for password and confirmation
-	read -rs -p "	Enter the new password: " pass1
-	echo "" >&2
+	read -rs -p "	Enter the new password: " pass1 2>&3
+	echo "" >&3
 
-	read -rs -p "	Confirm the new password: " pass2
-	echo "" >&2
+	read -rs -p "	Confirm the new password: " pass2 2>&3
+	echo "" >&3
 
 	# ======== Verifications
 	if [[ -z "${pass1}" ]]; then # Password is empty
-		cprint "\t{{RED:[!] ERROR:}} Password cannot be empty, try again" >&2
-		echo "" >&2
+		cprint "\t{{RED:[!]}} Password cannot be empty, try again"
+		echo "" >&3
 		get_new_password # Recursive call
 		return
 	fi
 
 	if [[ "${pass1}" != "${pass2}" ]]; then # Passwords are different
-		cprint "\t{{RED:[!] ERROR:}} Passwords do not match, try again" >&2
-		echo "" >&2
+		cprint "\t{{RED:[!]}} Passwords do not match, try again"
+		echo "" >&3
 		get_new_password # Recursive call
 		return
 	fi
@@ -242,7 +242,7 @@ install() {
 	# ======== Initializations
 	local package="$1"
 
-	cprint "{{BLUE:[*]}} Installing {{CYAN:${package}}}"
+	cprint "\t{{BLUE:[*]}} Installing {{CYAN:${package}}}"
 
 	# ======== Verifications
 	dpkg -l "${package}" | grep -q "^ii" && { # Already installed
@@ -251,14 +251,14 @@ install() {
 	}
 
 	apt show "${package}" || { # Not found in apt
-		cprint "\t\t{{RED:[!] ERROR:}} The package is not available in current repositories"
+		cprint "\t\t{{RED:[!]}} The package is not available in current repositories"
 		return 1
 	}
 
 	# ======== Install
 	# Force debian to suppress prompts from the debconf and automatically restart services without asking
 	DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" || {
-		cprint "\t\t{{RED:[!] ERROR:}} Package installation failed"
+		cprint "\t\t{{RED:[!]}} Package installation failed"
 		return 1
 	}
 
@@ -272,7 +272,7 @@ uninstall() {
 	# ======== Initializations
 	local package="$1"
 
-	cprint "{{BLUE:[*]}} Uninstalling {{CYAN:${package}}}"
+	cprint "\t{{BLUE:[*]}} Uninstalling {{CYAN:${package}}}"
 
 	# ======== Verifications
 	dpkg -l "${package}" | grep -q "^ii" || { # Not installed
@@ -282,12 +282,12 @@ uninstall() {
 
 	# ======== Uninstall
 	apt purge -y "${package}" || {
-		cprint "\t\t{{RED:[!] ERROR:}} Failed purging package"
+		cprint "\t\t{{RED:[!]}} Failed purging package"
 		return 1
 	}
 	# autoremove and autoclean
-	apt autoremove -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y || cprint "\t\t{{YELLOW:[!]}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y || cprint "\t\t{{YELLOW:[!]}} Failed during {{CYAN:apt autoclean}}"
 
 	# ======== Log and end call
 	cprint "\t\t{{GREEN:[-]}} Package uninstalled"
@@ -296,19 +296,19 @@ uninstall() {
 
 # ================ Update system with apt
 update() {
-	cprint "{{BLUE:[*]}} Updating system packages"
+	cprint "\t{{BLUE:[*]}} Updating system packages"
 
 	apt-get update || {
-		cprint "\t\t{{RED:[!] ERROR:}} {{CYAN:apt update}} failed"
+		cprint "\t\t{{RED:[!]}} {{CYAN:apt update}} failed"
 		return 1
 	}
 	# Force debian to suppress prompts from the debconf and automatically restart services without asking
 	DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get full-upgrade -y || {
-		cprint "\t\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
+		cprint "\t\t{{RED:[!]}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
-	apt autoremove -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y || cprint "\t\t{{YELLOW:[!]}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y || cprint "\t\t{{YELLOW:[!]}} Failed during {{CYAN:apt autoclean}}"
 
 	cprint "\t\t{{GREEN:[+]}} System updated"
 }
@@ -329,10 +329,10 @@ set_user_xfconf() {
 
 	# Perform xfconf-query
 	if [[ -n "${dbus_addr}" ]]; then
-		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t\t{{RED:[!]}} Failed setting xfce4: ${channel} ${prop}"
 	else
 		# Fallback if no active xfce session exists
-		sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+		sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t\t{{RED:[!]}} Failed setting xfce4: ${channel} ${prop}"
 	fi
 }
 
@@ -342,28 +342,28 @@ set_user_xfconf() {
 time {
 	# ======== Redirect output to log file
 	exec 3> >(tee -a /tmp/setup.log)
-	exec > >(sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g' >> /tmp/setup.log) 2>&1
+	exec >> /tmp/setup.log) 2>&1
 	# ======== Requirements
 	# Execution call
 	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
-		cprint "{{MAGENTA:[!] CRITICAL:}} This script requires direct execution"
+		cprint "{{MAGENTA:[!]}} This script requires direct execution"
 		exit 1
 	fi
 	# Tools
 	# Network
 	if ! ping -c 1 -W 2 8.8.8.8 && ! ping -c 1 -W 2 1.1.1.1; then
-		cprint "{{MAGENTA:[!] CRITICAL:}} This script requires internet connection"
+		cprint "{{MAGENTA:[!]}} This script requires internet connection"
 		exit 1
 	fi
 	# Root
 	if [[ $EUID -ne 0 ]]; then
-		cprint "{{MAGENTA:[!] CRITICAL:}} This script requires elevated privileges"
+		cprint "{{MAGENTA:[!]}} This script requires elevated privileges"
 		exit 1
 	fi
 	# OS
 	fetch_sysinfo
 	if [[ "${SYSINFO[os]}" != "kali" ]]; then
-		cprint "{{MAGENTA:[!] CRITICAL:}} This script was designed for Kali Linux"
+		cprint "{{MAGENTA:[!]}} This script was designed for Kali Linux"
 		exit 1
 	fi
 	# ======== User information
@@ -372,9 +372,9 @@ time {
 	declare -r ROOT_HOME=$(getent passwd 0 | cut -d : -f 6)
 
 	if [[ ! -d "${INVOKER_HOME}" ]]; then
-		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to find invoking home directory"
+		cprint "{{MAGENTA:[!]}} Failed to find invoking home directory"
 	elif [[ ! -d "${ROOT_HOME}" ]]; then
-		cprint "{{MAGENTA:[!] CRITICAL:}} Failed to find root home directory"
+		cprint "{{MAGENTA:[!]}} Failed to find root home directory"
 	fi
 
 # ============================================================================
@@ -417,7 +417,7 @@ time {
 			cp "/tmp/zshrc" "${ROOT_HOME}/.zshrc" || cprint "\t\t{{YELLOW:[!]}} Failed to set up root .zshrc"
 			rm /tmp/zshrc
 		else
-			cprint "\t\t{{RED:[!] ERROR:}} Failed to download .zshrc"
+			cprint "\t\t{{RED:[!]}} Failed to download .zshrc"
 		fi
 	fi
 	install "zsh-autosuggestions"
@@ -467,12 +467,12 @@ time {
 	install krb5-*
 	# Time
 	install ntpdate
-	install chronyd
+	install chrony
 	# ======== Development tools
 	cprint "{{BLUE:[*]}} Setting development tools"
 	# Languages
 	install gcc
-	cprint "{{BLUE:[*]}} Installing {{CYAN:rust}}" && sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) --yes --profile complete || cprint "\t\t{{RED:[!]}} Failed to install rust"
+	cprint "\t{{BLUE:[*]}} Installing {{CYAN:rust}}" && sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) --yes --profile complete || cprint "\t\t{{RED:[!]}} Failed to install rust"
 	install golang-go
 	install golang-src
 	install python3
@@ -510,7 +510,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	cprint "{{BLUE:[*]}} Installing {{CYAN:katana}}" && sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version || cprint "\t\t{{RED:[!]}} Failed to install katana"
+	cprint "\t{{BLUE:[*]}} Installing {{CYAN:katana}}" && sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version || cprint "\t\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install nuclei
 	install zaproxy
@@ -522,6 +522,7 @@ time {
 	# access
 	install cupp
 	install seclists
+	cprint "\t{{BLUE:[*]}} Extracting {{CYAN:rockyou}}" && gunzip /usr/share/wordlists/rockyou.txt.gz || cprint "\t\t{{RED:[!]}} Failed to extract rockyou"
 	# maneuver
 	install proxychains-ng
 	install ligolo-ng
@@ -547,7 +548,7 @@ time {
 	# bloodhound snaffler inveigh potatoes
 	cprint "{{BLUE:[*]}} Setting custom tools"
 	# Create dir
-	cprint "{{BLUE:[*]}} Creating tools directory" && sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/tools" || cprint "\t\t{{ERROR:[!]}} Could not create tools directory"
+	cprint "{{BLUE:[*]}} Creating tools directory" && sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/tools" || cprint "\t\t{{RED:[!]}} Could not create tools directory"
 	# Fetch tools
 	sudo -u "${INVOKER}" git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}/tools/WhatWaf"
 	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}/tools/kiterunner"
@@ -603,7 +604,7 @@ time {
 	# Adjust file owner
 	cprint "{{BLUE:[*]}} Adjusting share directory ownership" && chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/share"
 	# ================ Tweaking xfce4
-	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
+	cprint "{{BLUE:[*]}} Tweaking xfce4"
 	# load panel
 	if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/Kaos_KaliPanel.tar.bz2" -o /tmp/Kaos_KaliPanel.tar.bz2 ; then
 		session_pid=$(pgrep -u "${INVOKER}" -x xfce4-session | head -n 1)
@@ -613,9 +614,9 @@ time {
 		fi
 
 		if [[ -n "${dbus_addr}" ]]; then
-			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4 panel"
+			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t\t{{RED:[!]}} Failed setting xfce4 panel"
 		else
-			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4 panel"
+			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t\t{{RED:[!]}} Failed setting xfce4 panel"
 		fi
 		rm /tmp/Kaos_KaliPanel.tar.bz2
 		unset session_pid
@@ -644,11 +645,17 @@ time {
 	set_user_xfconf "keyboard-layout" "/Default/XkbDisable" "bool" false
 	# ================ Restarting services
 	cprint "{{BLUE:[*]}} Restarting services"
-	needrestart -ra || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to execute needrestart"
-	# systemctl restart lightdm
-	xfsettingsd --replace || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to replace xfsettingsd"
-	xfwm4 --replace || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to replace xfwm4"
-	xfce4-panel --restart || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to restart xfce4-panel"
+	needrestart -ra || cprint "\t\t{{YELLOW:[!]}} Failed to execute needrestart"
+	systemctl restart lightdm
+	# systemctl restart sshd
 	# ================ Done
 	cprint "{{GREEN:[*]}} Done"
 }
+cprint "{{BLUE:[?]}} Wish to restart the system now? (y/n)"
+read -r answer
+if [[ "${answer,,}" == "y" || "${answer,,}" == "yes" ]]; then
+	cprint "{{BLUE:[*]}} Restarting system"
+	reboot
+else
+	exit 0
+fi
