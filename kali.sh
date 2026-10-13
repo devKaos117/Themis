@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail	# Exit on error, undefined vars, pipe failures
+set -uo pipefail	# Exit on error, undefined vars, pipe failures
 IFS=$'\n\t'			# Safer field splitting
 
 TIMEFORMAT=$'\033[1;92m[*]\033[1;37m Execution time: %2lR\033[0m'
@@ -246,24 +246,24 @@ install() {
 
 	# ======== Verifications
 	dpkg -l "${package}" 2>/dev/null | grep -q "^ii" && { # Already installed
-		cprint "\t{{GREEN:[+]}} Package already installed"
+		cprint "\t\t{{GREEN:[+]}} Package already installed"
 		return 0
 	}
 
 	apt show "${package}" &>/dev/null || { # Not found in apt
-		cprint "\t{{RED:[!] ERROR:}} The package is not available in current repositories"
+		cprint "\t\t{{RED:[!] ERROR:}} The package is not available in current repositories"
 		return 1
 	}
 
 	# ======== Install
 	# Force debian to suppress prompts from the debconf and automatically restart services without asking
-	DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
-		cprint "\t{{RED:[!] ERROR:}} Package installation failed"
+	DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
+		cprint "\t\t{{RED:[!] ERROR:}} Package installation failed"
 		return 1
 	}
 
 	# ======== Log and end call
-	cprint "\t{{GREEN:[+]}} Package installed"
+	cprint "\t\t{{GREEN:[+]}} Package installed"
 	return 0
 }
 
@@ -276,21 +276,21 @@ uninstall() {
 
 	# ======== Verifications
 	dpkg -l "${package}" 2>/dev/null | grep -q "^ii" || { # Not installed
-		cprint "\t{{GREEN:[-]}} Package not found"
+		cprint "\t\t{{GREEN:[-]}} Package not found"
 		return 0
 	}
 
 	# ======== Uninstall
 	apt purge -y "${package}" 1> /dev/null || {
-		cprint "\t{{RED:[!] ERROR:}} Failed purging package"
+		cprint "\t\t{{RED:[!] ERROR:}} Failed purging package"
 		return 1
 	}
 	# autoremove and autoclean
-	apt autoremove -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	# ======== Log and end call
-	cprint "\t{{GREEN:[-]}} Package uninstalled"
+	cprint "\t\t{{GREEN:[-]}} Package uninstalled"
 	return 0
 }
 
@@ -299,18 +299,18 @@ update() {
 	cprint "{{BLUE:[*]}} Updating system packages"
 
 	apt-get update || {
-		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt update}} failed"
+		cprint "\t\t{{RED:[!] ERROR:}} {{CYAN:apt update}} failed"
 		return 1
 	}
 	# Force debian to suppress prompts from the debconf and automatically restart services without asking
-	DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade || {
-		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
+	DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get full-upgrade -y || {
+		cprint "\t\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
-	apt autoremove -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y 1> /dev/null || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
-	cprint "\t{{GREEN:[+]}} System updated"
+	cprint "\t\t{{GREEN:[+]}} System updated"
 }
 
 # ================ Wrapper function execute xfconf-query
@@ -329,10 +329,10 @@ set_user_xfconf() {
 
 	# Perform xfconf-query
 	if [[ -n "${dbus_addr}" ]]; then
-		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+		sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
 	else
 		# Fallback if no active xfce session exists
-		sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
+		sudo -u "${INVOKER}" dbus-run-session xfconf-query -c "${channel}" -p "${prop}" -n -t "${type}" -s "${val}" || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4: ${channel} ${prop}"
 	fi
 }
 
@@ -402,7 +402,6 @@ time {
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
 	# ====== Update
 	update
-
 	# ================ Installing tools
 	# ======== CLI
 	cprint "{{BLUE:[*]}} Setting CLI tools"
@@ -411,11 +410,11 @@ time {
 		chsh -s "/bin/zsh" $INVOKER
 		chsh -s "/bin/zsh" $(id -nu 0)
 		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/zshrc" -o /tmp/zshrc; then
-			sudo -u "${INVOKER}" cp "/tmp/zshrc" "${INVOKER_HOME}/.zshrc" || cprint "\t{{YELLOW:[!]}} Failed to set up user .zshrc"
-			cp "/tmp/zshrc" "${ROOT_HOME}/.zshrc" || cprint "\t{{YELLOW:[!]}} Failed to set up root .zshrc"
+			sudo -u "${INVOKER}" cp "/tmp/zshrc" "${INVOKER_HOME}/.zshrc" || cprint "\t\t{{YELLOW:[!]}} Failed to set up user .zshrc"
+			cp "/tmp/zshrc" "${ROOT_HOME}/.zshrc" || cprint "\t\t{{YELLOW:[!]}} Failed to set up root .zshrc"
 			rm /tmp/zshrc
 		else
-			cprint "\t{{RED:[!] ERROR:}} Failed to download .zshrc"
+			cprint "\t\t{{RED:[!] ERROR:}} Failed to download .zshrc"
 		fi
 	fi
 	install "zsh-autosuggestions"
@@ -470,7 +469,7 @@ time {
 	cprint "{{BLUE:[*]}} Setting development tools"
 	# Languages
 	install gcc
-	sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!]}} Failed to install rust"
+	cprint "{{BLUE:[*]}} Installing {{CYAN:rust}}" && sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) --yes --profile complete || cprint "\t\t{{RED:[!]}} Failed to install rust"
 	install golang-go
 	install golang-src
 	install python3
@@ -508,7 +507,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version 1> /dev/null 2>&1 || cprint "\t{{RED:[!]}} Failed to install katana"
+	cprint "{{BLUE:[*]}} Installing {{CYAN:katana}}" && sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version &> /dev/null || cprint "\t\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install nuclei
 	install zaproxy
@@ -533,7 +532,7 @@ time {
 	install powercat
 	install shellter
 	install windows-privesc-check
-	install ncat-win32
+	install ncat-w32
 	install bloodyad
 	install rubeus
 	install sharphound
@@ -545,53 +544,53 @@ time {
 	# bloodhound snaffler inveigh potatoes
 	cprint "{{BLUE:[*]}} Setting custom tools"
 	# Create dir
-	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/tools" || cprint "\t{{ERROR:[!]}} Could not create tools directory"
+	cprint "{{BLUE:[*]}} Creating tools directory" && sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/tools" || cprint "\t\t{{ERROR:[!]}} Could not create tools directory"
 	# Fetch tools
 	sudo -u "${INVOKER}" git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}/tools/WhatWaf"
 	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}/tools/kiterunner"
 	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}/tools/shcheck"
 	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}/tools/jwt_tool"
 	# Configure kiterunner
-	cd "${INVOKER_HOME}/tools/kiterunner" && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
-	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" && tar xzvf "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" -C "${INVOKER_HOME}/tools/kiterunner/routes/" && rm "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz"
-	for file in "${INVOKER_HOME}/tools/kiterunner/routes/*.json" ; do kr kb compile $file "$file.kite" ; done
+	# make -C "${INVOKER_HOME}/tools/kiterunner" build && ln "${INVOKER_HOME}/tools/kiterunner/dist/kr" "${INVOKER_HOME}/go/bin/kr"
+	# wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" && tar xzvf "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" -C "${INVOKER_HOME}/tools/kiterunner/routes/" && rm "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz"
+	# for file in "${INVOKER_HOME}/tools/kiterunner/routes/*.json" ; do kr kb compile $file "$file.kite" ; done
 	# ReconSpider.py
 	wget https://raw.githubusercontent.com/devKaos117/Metis/refs/heads/main/TA0043/ReconSpider.py -O "${INVOKER_HOME}/tools/ReconSpider.py"
 	# Bloodhound-legacy
 	wget https://github.com/SpecterOps/BloodHound-Legacy/releases/download/v4.3.1/BloodHound-linux-x64.zip -O "${INVOKER_HOME}/tools/BloodHound-linux-x64.zip" && unzip "${INVOKER_HOME}/tools/BloodHound-linux-x64.zip" -d "${INVOKER_HOME}/tools/BloodHound" && rm "${INVOKER_HOME}/tools/BloodHound-linux-x64.zip"
 	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/.config/bloodhound/" && wget https://raw.githubusercontent.com/hausec/Bloodhound-Custom-Queries/refs/heads/master/customqueries.json -O "${INVOKER_HOME}/.config/bloodhound/customqueries.json"
 	# Adjust file owner
-	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/tools"
+	cprint "{{BLUE:[*]}} Adjusting tools directory ownership" && chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/tools"
 	# ================ Preparing share folder
-	mkdir -p ~/share
-	ln -s /usr/share/peass/linpeas/linpeas.sh ~/share/linpeas.sh
-	ln -s /usr/share/peass/winpeas/winPEAS.bat ~/share/winPEAS.bat
-	ln -s /usr/share/peass/winpeas/winPEAS.ps1 ~/share/winPEAS.ps1
-	ln -s /usr/share/peass/winpeas/winPEASx64.exe ~/share/winPEASx64.exe
-	ln -s /usr/share/peass/winpeas/winPEASx64_ofs.exe ~/share/winPEASx64_ofs.exe
-	ln -s /usr/share/peass/winpeas/winPEASx86.exe ~/share/winPEASx86.exe
-	ln -s /usr/share/peass/winpeas/winPEASx86_ofs.exe ~/share/winPEASx86_ofs.exe
-	ln -s /usr/share/windows-resources/mimikatz/x64/mimikatz.exe ~/share/mimikatz.exe
-	ln -s /usr/share/windows-resources/mimikatz/Win32/mimikatz.exe ~/share/mimikatz32.exe
-	ln -s /usr/share/windows-resources/rubeus/Rubeus.exe ~/share/Rubeus.exe
-	ln -s /usr/share/windows-resources/windows-privesc-check/windows-privesc-check2.exe ~/share/windows-privesc-check.exe
-	ln -s /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 ~/share/PowerUp.ps1
-	ln -s /usr/share/windows-resources/powersploit/Recon/PowerView.ps1 ~/share/PowerView.ps1
-	ln -s /usr/share/windows-resources/powersploit/Recon/Invoke-Portscan.ps1 ~/share/Invoke-Portscan.ps1
-	ln -s /usr/share/windows-resources/powercat/powercat.ps1 ~/share/powercat.ps1
-	ln -s /usr/share/windows-resources/ncat/ncat.exe ~/share/ncat.exe
-	ln -s /usr/share/windows-resources/binaries/chisel_1.12.0-rc3_windows_amd64.exe ~/share/chisel_x64.exe
-	ln -s /usr/share/windows-resources/binaries/plink.exe ~/share/plink.exe
-	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.exe ~/share/SharpHound-legacy.exe
-	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.ps1 ~/share/SharpHound-legacy.ps1
+	mkdir -p "${INVOKER_HOME}/share"
+	cprint "{{BLUE:[*]}} Creating share directory" && ln -s /usr/share/peass/linpeas/linpeas.sh "${INVOKER_HOME}/share/linpeas.sh"
+	ln -s /usr/share/peass/winpeas/winPEAS.bat "${INVOKER_HOME}/share/winPEAS.bat"
+	ln -s /usr/share/peass/winpeas/winPEAS.ps1 "${INVOKER_HOME}/share/winPEAS.ps1"
+	ln -s /usr/share/peass/winpeas/winPEASx64.exe "${INVOKER_HOME}/share/winPEASx64.exe"
+	ln -s /usr/share/peass/winpeas/winPEASx64_ofs.exe "${INVOKER_HOME}/share/winPEASx64_ofs.exe"
+	ln -s /usr/share/peass/winpeas/winPEASx86.exe "${INVOKER_HOME}/share/winPEASx86.exe"
+	ln -s /usr/share/peass/winpeas/winPEASx86_ofs.exe "${INVOKER_HOME}/share/winPEASx86_ofs.exe"
+	ln -s /usr/share/windows-resources/mimikatz/x64/mimikatz.exe "${INVOKER_HOME}/share/mimikatz.exe"
+	ln -s /usr/share/windows-resources/mimikatz/Win32/mimikatz.exe "${INVOKER_HOME}/share/mimikatz32.exe"
+	ln -s /usr/share/windows-resources/rubeus/Rubeus.exe "${INVOKER_HOME}/share/Rubeus.exe"
+	ln -s /usr/share/windows-resources/windows-privesc-check/windows-privesc-check2.exe "${INVOKER_HOME}/share/windows-privesc-check.exe"
+	ln -s /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 "${INVOKER_HOME}/share/PowerUp.ps1"
+	ln -s /usr/share/windows-resources/powersploit/Recon/PowerView.ps1 "${INVOKER_HOME}/share/PowerView.ps1"
+	ln -s /usr/share/windows-resources/powersploit/Recon/Invoke-Portscan.ps1 "${INVOKER_HOME}/share/Invoke-Portscan.ps1"
+	ln -s /usr/share/windows-resources/powercat/powercat.ps1 "${INVOKER_HOME}/share/powercat.ps1"
+	ln -s /usr/share/windows-resources/ncat/ncat.exe "${INVOKER_HOME}/share/ncat.exe"
+	ln -s /usr/share/windows-resources/binaries/chisel_1.12.0-rc3_windows_amd64.exe "${INVOKER_HOME}/share/chisel_x64.exe"
+	ln -s /usr/share/windows-resources/binaries/plink.exe "${INVOKER_HOME}/share/plink.exe"
+	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.exe "${INVOKER_HOME}/share/SharpHound-legacy.exe"
+	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.ps1 "${INVOKER_HOME}/share/SharpHound-legacy.ps1"
 	wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}/share/antak.aspx" && sed -i '12,13d' "${INVOKER_HOME}/share/antak.aspx" && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}/share/antak.aspx" && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}/share/antak.aspx"
 	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}/share/GodPotato-NET4.exe"
 	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}/share/GodPotato-NET35.exe"
 	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}/share/GodPotato-NET2.exe"
 	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_agent_Win64 && mv /tmp/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Win64.exe" && rm -rf /tmp/ligolo-ng_agent_Win64 && rm /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O /tmp/share/ligolo-ng_proxy_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_proxy_Win64 && mv /tmp/ligolo-ng_proxy_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Win64.exe" && rm -rf /tmp/ligolo-ng_proxy_Win64 && rm /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O /tmp/share/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_agent_Linux64 && mv /tmp/ligolo-ng_agent_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Linux64.exe" && rm -rf /tmp/ligolo-ng_agent_Linux64 && rm /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O /tmp/share/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_proxy_Linux64 && mv /tmp/ligolo-ng_proxy_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Linux64.exe" && rm -rf /tmp/ligolo-ng_proxy_Linux64 && rm /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_proxy_Win64 && mv /tmp/ligolo-ng_proxy_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Win64.exe" && rm -rf /tmp/ligolo-ng_proxy_Win64 && rm /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_agent_Linux64 && mv /tmp/ligolo-ng_agent_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Linux64.exe" && rm -rf /tmp/ligolo-ng_agent_Linux64 && rm /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_proxy_Linux64 && mv /tmp/ligolo-ng_proxy_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Linux64.exe" && rm -rf /tmp/ligolo-ng_proxy_Linux64 && rm /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
 	# Inveigh.exe
 	# SharpGPOAbuse.exe
 	# Snaffler.exe
@@ -599,7 +598,7 @@ time {
 	# RunasCs.exe
 	# PsTools
 	# Adjust file owner
-	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/share"
+	cprint "{{BLUE:[*]}} Adjusting share directory ownership" && chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/share"
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
@@ -611,9 +610,9 @@ time {
 		fi
 
 		if [[ -n "${dbus_addr}" ]]; then
-			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
+			sudo -u "${INVOKER}" DBUS_SESSION_BUS_ADDRESS="${dbus_addr}" xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4 panel"
 		else
-			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t{{RED:ERROR:}} Failed setting xfce4 panel"
+			sudo -u "${INVOKER}" dbus-run-session xfce4-panel-profiles load /tmp/Kaos_KaliPanel.tar.bz2 || cprint "\t\t{{RED:ERROR:}} Failed setting xfce4 panel"
 		fi
 		rm /tmp/Kaos_KaliPanel.tar.bz2
 		unset session_pid
@@ -632,15 +631,21 @@ time {
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-ac-off" "int" 0
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-on-battery-off" "int" 0
 	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/lock-screen-suspend-hibernate" "bool" false
-	# disable DPMS and force presentation mode
-	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/dpms-enabled" "bool" false
-	set_user_xfconf "xfce4-power-manager" "/xfce4-power-manager/presentation-mode" "bool" true
 	# disable lock screen
 	set_user_xfconf "xfce4-session" "/general/LockCommand" "string" ""
 	set_user_xfconf "xfce4-session" "/shutdown/LockScreen" "bool" false
 	# keyboard layout
 	setxkbmap -layout br -variant abnt2
 	set_user_xfconf "keyboard-layout" "/Default/XkbLayout" "string" "br"
+	set_user_xfconf "keyboard-layout" "/Default/XkbVariant" "string" "abnt2"
+	set_user_xfconf "keyboard-layout" "/Default/XkbDisable" "bool" false
+	# ================ Restarting services
+	cprint "{{BLUE:[*]}} Restarting services"
+	needrestart -ra || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to execute needrestart"
+	# systemctl restart lightdm
+	xfsettingsd --replace || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to replace xfsettingsd"
+	xfwm4 --replace || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to replace xfwm4"
+	xfce4-panel --restart || cprint "\t\t{{YELLOW:[!] WARNING:}} Failed to restart xfce4-panel"
 	# ================ Done
 	cprint "{{GREEN:[*]}} Done"
 }
