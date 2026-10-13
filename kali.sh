@@ -508,7 +508,7 @@ time {
 	install feroxbuster
 	install photon
 	install gospider
-	sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}"/go/bin/katana --version 1> /dev/null 2>&1 || cprint "\t{{RED:[!]}} Failed to install katana"
+	sudo -u "${INVOKER}" CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest && "${INVOKER_HOME}/go/bin/katana" --version 1> /dev/null 2>&1 || cprint "\t{{RED:[!]}} Failed to install katana"
 	# assessment
 	install nuclei
 	install zaproxy
@@ -545,23 +545,23 @@ time {
 	# bloodhound snaffler inveigh potatoes
 	cprint "{{BLUE:[*]}} Setting custom tools"
 	# Create dir
-	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}"/tools || cprint "\t{{ERROR:[!]}} Could not create tools directory"
+	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/tools" || cprint "\t{{ERROR:[!]}} Could not create tools directory"
 	# Fetch tools
-	sudo -u "${INVOKER}" git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}"/tools/WhatWaf
-	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}"/tools/kiterunner
-	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}"/tools/shcheck
-	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}"/tools/jwt_tool
+	sudo -u "${INVOKER}" git clone https://github.com/Ekultek/WhatWaf "${INVOKER_HOME}/tools/WhatWaf"
+	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}/tools/kiterunner"
+	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}/tools/shcheck"
+	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}/tools/jwt_tool"
 	# Configure kiterunner
-	cd "${INVOKER_HOME}"/tools/kiterunner && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
-	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz && tar xzvf "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz -C "${INVOKER_HOME}"/tools/kiterunner/routes/ && rm "${INVOKER_HOME}"/tools/kiterunner/routes/routes-large.json.tar.gz
-	for file in "${INVOKER_HOME}"/tools/kiterunner/routes/*.json ; do kr kb compile $file "$file.kite" ; done
+	cd "${INVOKER_HOME}/tools/kiterunner" && make build && ln -s $(pwd)/dist/kr ~/go/bin/kr
+	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" && tar xzvf "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" -C "${INVOKER_HOME}/tools/kiterunner/routes/" && rm "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz"
+	for file in "${INVOKER_HOME}/tools/kiterunner/routes/*.json" ; do kr kb compile $file "$file.kite" ; done
 	# ReconSpider.py
-	wget https://raw.githubusercontent.com/devKaos117/Metis/refs/heads/main/TA0043/ReconSpider.py -O "${INVOKER_HOME}"/tools/ReconSpider.py
+	wget https://raw.githubusercontent.com/devKaos117/Metis/refs/heads/main/TA0043/ReconSpider.py -O "${INVOKER_HOME}/tools/ReconSpider.py"
 	# Bloodhound-legacy
-	wget https://github.com/SpecterOps/BloodHound-Legacy/releases/download/v4.3.1/BloodHound-linux-x64.zip -O "${INVOKER_HOME}"/tools/BloodHound-linux-x64.zip && unzip "${INVOKER_HOME}"/tools/BloodHound-linux-x64.zip -d "${INVOKER_HOME}"/tools/BloodHound && rm "${INVOKER_HOME}"/tools/BloodHound-linux-x64.zip
-	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}"/.config/bloodhound/ && wget https://raw.githubusercontent.com/hausec/Bloodhound-Custom-Queries/refs/heads/master/customqueries.json -O ~/.config/bloodhound/customqueries.json
+	wget https://github.com/SpecterOps/BloodHound-Legacy/releases/download/v4.3.1/BloodHound-linux-x64.zip -O "${INVOKER_HOME}/tools/BloodHound-linux-x64.zip" && unzip "${INVOKER_HOME}/tools/BloodHound-linux-x64.zip" -d "${INVOKER_HOME}/tools/BloodHound" && rm "${INVOKER_HOME}/tools/BloodHound-linux-x64.zip"
+	sudo -u "${INVOKER}" mkdir -p "${INVOKER_HOME}/.config/bloodhound/" && wget https://raw.githubusercontent.com/hausec/Bloodhound-Custom-Queries/refs/heads/master/customqueries.json -O "${INVOKER_HOME}/.config/bloodhound/customqueries.json"
 	# Adjust file owner
-	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}"/tools
+	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/tools"
 	# ================ Preparing share folder
 	mkdir -p ~/share
 	ln -s /usr/share/peass/linpeas/linpeas.sh ~/share/linpeas.sh
@@ -584,14 +584,14 @@ time {
 	ln -s /usr/share/windows-resources/binaries/plink.exe ~/share/plink.exe
 	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.exe ~/share/SharpHound-legacy.exe
 	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.ps1 ~/share/SharpHound-legacy.ps1
-	wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}"/share/antak.aspx && sed -i '12,13d' "${INVOKER_HOME}"/share/antak.aspx && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}"/share/antak.aspx && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}"/share/antak.aspx
-	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}"/share/GodPotato-NET4.exe
-	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}"/share/GodPotato-NET35.exe
-	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}"/share/GodPotato-NET2.exe
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_windows_amd64.zip -d "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64 && rm "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_windows_amd64.zip && mv "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64.exe && rm -rf "${INVOKER_HOME}"/share/ligolo-ng_agent_Win64
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O "${INVOKER_HOME}"/share/ligolo-ng_proxy_0.9.1_windows_amd64.zip
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O "${INVOKER_HOME}"/share/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O "${INVOKER_HOME}"/share/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
+	wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}/share/antak.aspx" && sed -i '12,13d' "${INVOKER_HOME}/share/antak.aspx" && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}/share/antak.aspx" && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}/share/antak.aspx"
+	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}/share/GodPotato-NET4.exe"
+	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}/share/GodPotato-NET35.exe"
+	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}/share/GodPotato-NET2.exe"
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_agent_Win64 && mv /tmp/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Win64.exe" && rm -rf /tmp/ligolo-ng_agent_Win64 && rm /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O /tmp/share/ligolo-ng_proxy_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_proxy_Win64 && mv /tmp/ligolo-ng_proxy_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Win64.exe" && rm -rf /tmp/ligolo-ng_proxy_Win64 && rm /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O /tmp/share/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_agent_Linux64 && mv /tmp/ligolo-ng_agent_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Linux64.exe" && rm -rf /tmp/ligolo-ng_agent_Linux64 && rm /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
+	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O /tmp/share/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_proxy_Linux64 && mv /tmp/ligolo-ng_proxy_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Linux64.exe" && rm -rf /tmp/ligolo-ng_proxy_Linux64 && rm /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
 	# Inveigh.exe
 	# SharpGPOAbuse.exe
 	# Snaffler.exe
@@ -599,7 +599,7 @@ time {
 	# RunasCs.exe
 	# PsTools
 	# Adjust file owner
-	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}"/share
+	chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/share"
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4 tools"
 	# load panel
