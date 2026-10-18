@@ -98,7 +98,7 @@ fetch_sysinfo() {
 		os_version="${DISTRIB_RELEASE:-unknown}"
 		os_codename="${DISTRIB_CODENAME:-unknown}"
 	else
-		cprint "{{MAGENTA:[!]}} Failed to detect current operating system" >&3
+		cprint "{{MAGENTA:[!]}} Failed to detect current operating system"
 		exit 1
 	fi
 
@@ -342,7 +342,7 @@ set_user_xfconf() {
 time {
 	# ======== Redirect output to log file
 	exec 3> >(tee -a /tmp/setup.log)
-	exec >> /tmp/setup.log) 2>&1
+	exec >> /tmp/setup.log 2>&1
 	# ======== Requirements
 	# Execution call
 	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -403,6 +403,9 @@ time {
 	# ====== Debian
 	echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/debian.list
 	printf "Package: *\nPin: release o=Debian\nPin-Priority: 100\n" > /etc/apt/preferences.d/debian
+	# ====== Smallstep
+	curl -fsSL https://packages.smallstep.com/keys/apt/repo-signing-key.gpg -o /etc/apt/keyrings/smallstep.asc
+	echo -e 'Types: deb\nURIs: https://packages.smallstep.com/stable/debian\nSuites: debs\nComponents: main\nSigned-By: /etc/apt/keyrings/smallstep.asc' > /etc/apt/sources.list.d/smallstep.sources
 	# ====== Update
 	update
 	# ================ Installing tools
@@ -472,6 +475,7 @@ time {
 	cprint "{{BLUE:[*]}} Setting development tools"
 	# Languages
 	install gcc
+	install mingw-w64
 	cprint "\t{{BLUE:[*]}} Installing {{CYAN:rust}}" && sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) --yes --profile complete || cprint "\t\t{{RED:[!]}} Failed to install rust"
 	install golang-go
 	install golang-src
@@ -519,6 +523,7 @@ time {
 	install cmseek
 	install xsstrike
 	install mssqlpwner
+	install step-cli
 	# access
 	install cupp
 	install seclists
@@ -601,7 +606,8 @@ time {
 	# Certify.exe
 	# RunasCs.exe
 	# PsTools
-	# Adjust file owner
+	# kerbrute
+	# Adjust file ownership
 	cprint "{{BLUE:[*]}} Adjusting share directory ownership" && chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/share"
 	# ================ Tweaking xfce4
 	cprint "{{BLUE:[*]}} Tweaking xfce4"
@@ -644,9 +650,9 @@ time {
 	set_user_xfconf "keyboard-layout" "/Default/XkbVariant" "string" "abnt2"
 	set_user_xfconf "keyboard-layout" "/Default/XkbDisable" "bool" false
 	# ================ Restarting services
-	cprint "{{BLUE:[*]}} Restarting services"
-	needrestart -ra || cprint "\t\t{{YELLOW:[!]}} Failed to execute needrestart"
-	systemctl restart lightdm
+	# cprint "{{BLUE:[*]}} Restarting services"
+	# needrestart -ra || cprint "\t\t{{YELLOW:[!]}} Failed to execute needrestart"
+	# systemctl restart lightdm
 	# systemctl restart sshd
 	# ================ Done
 	cprint "{{GREEN:[*]}} Done"

@@ -336,13 +336,9 @@ time {
 	fi
 	# tmux
 	# ====== Tools
-	install "neovim"
-	install "bat"
 	install "tldr"
 	install "mc"
-	install "ascii"
 	install "asciinema"
-	install "xxd"
 	# ================ Platform
 	cprint "{{BLUE:[*]}} Setting platform tools"
 	# ====== Monitoring
@@ -421,6 +417,7 @@ time {
 	cprint "{{BLUE:[*]}} Setting development tools"
 	# ====== Languages
 	install gcc
+	install mingw-w64
 	sudo -u "${INVOKER}" bash <(curl -sSf https://sh.rustup.rs) -y || cprint "\t{{RED:[!] ERROR:}} Failed to install rust"
 	install golang-go
 	install golang-src
@@ -446,6 +443,10 @@ time {
 	install just
 	install cmake
 	install jq
+	install ascii
+	install xxd
+	install neovim
+	install bat
 	# ================ Virtualization
 	cprint "{{BLUE:[*]}} Setting virtualization tools"
 	# ====== VMWare
@@ -492,12 +493,12 @@ time {
 	# john
 	# ====== Wordlists
 	install cupp
-	install seclists
+	# seclists
 	# ====== Hardening
-	install debsecan
-	install auditd
-	install audispd-plugins
-	install ssh-audit
+	# install debsecan
+	# install auditd
+	# install audispd-plugins
+	# install ssh-audit
 	# https://github.com/netblue30/firejail
 	# https://github.com/CISOfy/lynis
 	# https://github.com/ossec/ossec-hids
