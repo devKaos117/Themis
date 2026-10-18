@@ -38,12 +38,12 @@ cprint() {
 		msg="${prefix}${ansi_color}${text}${reset}${default_color}${suffix}"
 	done
 	# ======== Print text
-	echo -e "${default_color}${msg}${reset}"
+	echo -e "${default_color}${msg}${reset}" >&3
 }
 
 # ================ Assert the availability of a command
 has_cmd() {
-	command -v ${1} &> /dev/null
+	command -v ${1}
 }
 
 # ================ Fetch current system information
@@ -120,27 +120,27 @@ fetch_sysinfo() {
 	arch="$(uname -m)"
 
 	# ======== Detect live environment
-	if grep -q "boot=live" /proc/cmdline 2>/dev/null || grep -q "live" /proc/cmdline 2>/dev/null || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
+	if grep -q "boot=live" /proc/cmdline || grep -q "live" /proc/cmdline || [[ -d /lib/live/mount ]] || [[ -d /run/live ]]; then
 		is_live=1
 	else
 		is_live=0
 	fi
 
 	# ======== Detect virtual environment
-	if command -v systemd-detect-virt &> /dev/null; then
-		if [[ "$(systemd-detect-virt 2>/dev/null)" != "none" ]]; then
+	if command -v systemd-detect-virt ; then
+		if [[ "$(systemd-detect-virt)" != "none" ]]; then
 			is_virt=1
 			cprint "\t{{BLUE:[+]}} Virtual environment detected: $(systemd-detect-virt)"
 		fi
 	elif [[ -f /sys/class/dmi/id/product_name ]]; then
 		local product_name
-		product_name="$(cat /sys/class/dmi/id/product_name 2>/dev/null)"
+		product_name="$(cat /sys/class/dmi/id/product_name)"
 		if [[ "$product_name" =~ (VirtualBox|VMware|KVM|QEMU) ]]; then
 			is_virt=1
 			cprint "\t{{BLUE:[+]}} Virtual environment detected: $product_name"
 		fi
 	elif [[ -f /.dockerenv ]] || \
-		grep -q "docker\|lxc" /proc/1/cgroup 2>/dev/null; then
+		grep -q "docker\|lxc" /proc/1/cgroup ; then
 		is_virt=1
 		cprint "\t{{BLUE:[+]}} Containerized environment detected"
 	else
@@ -169,19 +169,19 @@ install() {
 	cprint "{{BLUE:[*]}} Installing {{CYAN:${package}}}"
 
 	# ======== Verifications
-	dpkg -l "${package}" 2>/dev/null | grep -q "^ii" && { # Already installed
+	dpkg -l "${package}" | grep -q "^ii" && { # Already installed
 		cprint "\t{{GREEN:[+]}} Package already installed"
 		return 0
 	}
 
-	apt show "${package}" &>/dev/null || { # Not found in apt
+	apt show "${package}" || { # Not found in apt
 		cprint "\t{{RED:[!] ERROR:}} The package is not available in current repositories"
 		return 1
 	}
 
 	# ======== Install
 	# Force debian to suppress prompts from the debconf and automatically restart services without asking
-	DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" 1> /dev/null || {
+	DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${package}" || {
 		cprint "\t{{RED:[!] ERROR:}} Package installation failed"
 		return 1
 	}
@@ -199,19 +199,19 @@ uninstall() {
 	cprint "{{BLUE:[*]}} Uninstalling {{CYAN:${package}}}"
 
 	# ======== Verifications
-	dpkg -l "${package}" 2>/dev/null | grep -q "^ii" || { # Not installed
+	dpkg -l "${package}" | grep -q "^ii" || { # Not installed
 		cprint "\t{{GREEN:[-]}} Package not found"
 		return 0
 	}
 
 	# ======== Uninstall
-	apt purge -y "${package}" 1> /dev/null || {
+	apt purge -y "${package}" || {
 		cprint "\t{{RED:[!] ERROR:}} Failed purging package"
 		return 1
 	}
 	# autoremove and autoclean
-	apt autoremove -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	# ======== Log and end call
 	cprint "\t{{GREEN:[-]}} Package uninstalled"
@@ -231,8 +231,8 @@ update() {
 		cprint "\t{{RED:[!] ERROR:}} {{CYAN:apt full-upgrade}} failed"
 		return 1
 	}
-	apt autoremove -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
-	apt autoclean -y 1> /dev/null || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
+	apt autoremove -y || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoremove}}"
+	apt autoclean -y || cprint "\t{{YELLOW:[!] WARNING:}} Failed during {{CYAN:apt autoclean}}"
 
 	cprint "\t{{GREEN:[+]}} System updated"
 }
@@ -241,6 +241,9 @@ update() {
 # INITIALIZATIONS
 # ============================================================================
 time {
+	# ======== Redirect output to log
+	exec 3> >(tee -a /tmp/setup.log)
+	exec >> /tmp/setup.log 2>&1
 	# ======== Requirements
 	# Execution call
 	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -249,7 +252,7 @@ time {
 	fi
 	# Tools
 	# Network
-	if ! ping -c 1 -W 2 8.8.8.8 &> /dev/null && ! ping -c 1 -W 2 1.1.1.1 &> /dev/null; then
+	if ! ping -c 1 -W 2 8.8.8.8 && ! ping -c 1 -W 2 1.1.1.1 ; then
 		cprint "{{MAGENTA:[!] CRITICAL:}} This script requires internet connection"
 		exit 1
 	fi
@@ -298,7 +301,7 @@ time {
 	if [[ ! -f /etc/apt/sources.list.d/docker.sources ]]; then curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && chmod a+r /etc/apt/keyrings/docker.asc && echo -e "Types: deb\nURIs: https://download.docker.com/linux/debian\nSuites: ${SYSINFO[codename]}\nComponents: stable\nArchitectures: $(dpkg --print-architecture)\nSigned-By: /etc/apt/keyrings/docker.asc" > /etc/apt/sources.list.d/docker.sources ; fi
 	# ====== Flatpak
 	install flatpak
-	flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 1> /dev/null || cprint "\t{{YELLOW:[!] Warning:}} Failed to add Flathub remote"
+	flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || cprint "\t{{YELLOW:[!] Warning:}} Failed to add Flathub remote"
 	# ====== Snapcraft
 	install snapd && snap install snapd
 	# ====== Update
@@ -396,7 +399,7 @@ time {
 	# ====== VPN
 	install wireguard
 	install openvpn
-	install tor && systemctl enable --now tor 1> /dev/null
+	install tor && systemctl enable --now tor
 	# NordVPN
 	sh <(curl -sSf "https://downloads.nordcdn.com/apps/linux/install.sh") -n || cprint "\t{{RED:[!] ERROR:}} Failed to install NordVPN CLI"
 	sh <(curl -sSf "https://downloads.nordcdn.com/apps/linux/install.sh") -p nordvpn-gui -n || cprint "\t{{RED:[!] ERROR:}} Failed to install NordVPN GUI"
