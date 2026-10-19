@@ -251,6 +251,7 @@ time {
 		exit 1
 	fi
 	# Tools
+	install curl
 	# Network
 	if ! ping -c 1 -W 2 8.8.8.8 && ! ping -c 1 -W 2 1.1.1.1 ; then
 		cprint "{{MAGENTA:[!] CRITICAL:}} This script requires internet connection"
@@ -285,6 +286,8 @@ time {
 	adduser "${INVOKER}" sudo
 	# ================ Sources and repositories
 	cprint "{{BLUE:[*]}} Setting up sources"
+	# ====== Utilities
+	install apt-file
 	# ====== extrepo
 	install extrepo
 	# ====== Brave
@@ -315,7 +318,7 @@ time {
 		if curl -sSf "https://raw.githubusercontent.com/devKaos117/Themis/refs/heads/main/files/zshrc" -o /tmp/zshrc; then
 			sudo -u "${INVOKER}" cp "/tmp/zshrc" "${INVOKER_HOME}/.zshrc" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up user .zshrc"
 			cp "/tmp/zshrc" "${ROOT_HOME}/.zshrc" || cprint "\t{{YELLOW:[!] Warning:}} Failed to set up root .zshrc"
-			rm /tmp/zshrc
+			chsh -s /bin/zsh "$INVOKER" && rm /tmp/zshrc
 		else
 			cprint "\t{{RED:[!] ERROR:}} Failed to download .zshrc"
 		fi
@@ -336,7 +339,7 @@ time {
 	fi
 	# tmux
 	# ====== Tools
-	install "tldr"
+	# install "tldr"
 	install "mc"
 	install "asciinema"
 	# ================ Platform
@@ -359,7 +362,7 @@ time {
 	# ====== Managing
 	install trash-cli
 	install rclone
-	install openrgb
+	# install openrgb
 	# ====== Smartcards and token suport
 	install opensc
 	install pcscd
@@ -383,12 +386,18 @@ time {
 		# NVIDIA
 	fi
 	# ====== Sound
+	install pipewire
+	install vlc-plugin-pipewire
 	install ffmpeg
 	# ================ Networking
 	cprint "{{BLUE:[*]}} Setting networking tools"
 	# ====== Tools
+	install network-manager
 	install netcat-openbsd
 	install hping3
+	install dnsutils
+	install net-tools
+	install socat
 	# ====== Monitoring
 	install mtr
 	# install smokeping
@@ -401,18 +410,21 @@ time {
 	sh <(curl -sSf "https://downloads.nordcdn.com/apps/linux/install.sh") -p nordvpn-gui -n || cprint "\t{{RED:[!] ERROR:}} Failed to install NordVPN GUI"
 	usermod -aG nordvpn $(id -nu 1000)
 	# Proton
-	install proton-vpn-cli
+	# install proton-vpn-cli
 	# ====== Kerberos
 	install cntlm
 	install krb5-*
 	# ====== Time
-	install ntpdate
-	install chronyd
+	install chrony
+	install ntpsec
+	install ntpsec-ntpdate
+	install ntpsec-ntpdig
+	install ntpsec-ntpviz
+	install ntpsec-doc
 	# ====== Torrent
 	install qbittorrent
-	install qbittorrent-cli
 	# LAN transfering
-	flatpak install flathub org.localsend.localsend_app
+	flatpak install -y flathub org.localsend.localsend_app
 	# ================ Development tools
 	cprint "{{BLUE:[*]}} Setting development tools"
 	# ====== Languages
@@ -424,6 +436,7 @@ time {
 	install python3
 	install powershell
 	sh <(curl -fsSL "https://d2lang.com/install.sh") || cprint "\t{{RED:[!] ERROR:}} Failed to install D2"
+	# Linux headers
 	# TexLive
 	install latexmk
 	# tlmgr install lastpage fancyhdr multirow enumitem mathtools amsfonts hyperref titlesec tkz-euclide
@@ -445,11 +458,14 @@ time {
 	install jq
 	install ascii
 	install xxd
+	install vim
 	install neovim
 	install bat
 	# ================ Virtualization
 	cprint "{{BLUE:[*]}} Setting virtualization tools"
 	# ====== VMWare
+	# download vmware
+	# compile vmmon and vmnet
 	# ====== Docker
 	# docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 	install docker.io
@@ -482,8 +498,10 @@ time {
 	flatpak install flathub com.discordapp.Discord
 	# ====== Tools
 	install 7zip
+	install zip
 	install flameshot
 	# ================ Security
+	install policykit-1
 	# ====== Networking
 	install nmap
 	install wireshark
@@ -495,6 +513,7 @@ time {
 	install cupp
 	# seclists
 	# ====== Hardening
+	install nftables
 	# install debsecan
 	# install auditd
 	# install audispd-plugins
@@ -503,3 +522,52 @@ time {
 	# https://github.com/CISOfy/lynis
 	# https://github.com/ossec/ossec-hids
 	# https://www.snort.org/
+	# https://github.com/aide/aide
+	# ================ xfce4
+	# ====== kali-desktop-core
+	# dbus-user-session
+	# dbus-x11
+	# firefox-esr | firefox
+	# haveged
+	# kali-archive-keyring
+	# kali-defaults-desktop
+	# kali-grant-root
+	# kali-menu
+	# kali-themes
+	# xclip
+	# xdg-utils
+	# xserver-xorg-legacy
+	# ====== kali-desktop-xfce
+	# atril
+	# engrampa
+	# kali-desktop-core
+	# libspa-0.2-bluetooth
+	# lightdm
+	# mate-calc
+	# mate-polkit
+	# mousepad
+	# network-manager-applet
+	# nm-connection-editor
+	# parole
+	# pavucontrol
+	# pipewire-pulse
+	# qt5ct
+	# qt6ct
+	# qterminal
+	# ristretto
+	# thunar
+	# thunar-archive-plugin
+	# thunar-gtkhash
+	# wireplumber
+	# xcape
+	# xdg-user-dirs-gtk
+	# xfce4
+	# xfce4-cpugraph-plugin
+	# xfce4-genmon-plugin
+	# xfce4-notifyd
+	# xfce4-power-manager-plugins
+	# xfce4-screensaver
+	# xfce4-screenshooter
+	# xfce4-taskmanager
+	# xfce4-whiskermenu-plugin
+}

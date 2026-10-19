@@ -559,6 +559,7 @@ time {
 	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}/tools/kiterunner"
 	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}/tools/shcheck"
 	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}/tools/jwt_tool"
+	# kerbrute
 	# Configure kiterunner
 	# make -C "${INVOKER_HOME}/tools/kiterunner" build && ln "${INVOKER_HOME}/tools/kiterunner/dist/kr" "${INVOKER_HOME}/go/bin/kr"
 	# wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" && tar xzvf "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" -C "${INVOKER_HOME}/tools/kiterunner/routes/" && rm "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz"
@@ -572,41 +573,41 @@ time {
 	cprint "{{BLUE:[*]}} Adjusting tools directory ownership" && chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/tools"
 	# ================ Preparing share folder
 	mkdir -p "${INVOKER_HOME}/share"
-	cprint "{{BLUE:[*]}} Creating share directory" && ln -s /usr/share/peass/linpeas/linpeas.sh "${INVOKER_HOME}/share/linpeas.sh"
-	ln -s /usr/share/peass/winpeas/winPEAS.bat "${INVOKER_HOME}/share/winPEAS.bat"
-	ln -s /usr/share/peass/winpeas/winPEAS.ps1 "${INVOKER_HOME}/share/winPEAS.ps1"
-	ln -s /usr/share/peass/winpeas/winPEASx64.exe "${INVOKER_HOME}/share/winPEASx64.exe"
-	ln -s /usr/share/peass/winpeas/winPEASx64_ofs.exe "${INVOKER_HOME}/share/winPEASx64_ofs.exe"
-	ln -s /usr/share/peass/winpeas/winPEASx86.exe "${INVOKER_HOME}/share/winPEASx86.exe"
-	ln -s /usr/share/peass/winpeas/winPEASx86_ofs.exe "${INVOKER_HOME}/share/winPEASx86_ofs.exe"
-	ln -s /usr/share/windows-resources/mimikatz/x64/mimikatz.exe "${INVOKER_HOME}/share/mimikatz.exe"
-	ln -s /usr/share/windows-resources/mimikatz/Win32/mimikatz.exe "${INVOKER_HOME}/share/mimikatz32.exe"
-	ln -s /usr/share/windows-resources/rubeus/Rubeus.exe "${INVOKER_HOME}/share/Rubeus.exe"
-	ln -s /usr/share/windows-resources/windows-privesc-check/windows-privesc-check2.exe "${INVOKER_HOME}/share/windows-privesc-check.exe"
-	ln -s /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 "${INVOKER_HOME}/share/PowerUp.ps1"
-	ln -s /usr/share/windows-resources/powersploit/Recon/PowerView.ps1 "${INVOKER_HOME}/share/PowerView.ps1"
-	ln -s /usr/share/windows-resources/powersploit/Recon/Invoke-Portscan.ps1 "${INVOKER_HOME}/share/Invoke-Portscan.ps1"
-	ln -s /usr/share/windows-resources/powercat/powercat.ps1 "${INVOKER_HOME}/share/powercat.ps1"
-	ln -s /usr/share/windows-resources/ncat/ncat.exe "${INVOKER_HOME}/share/ncat.exe"
-	ln -s /usr/share/windows-resources/binaries/chisel_1.12.0-rc3_windows_amd64.exe "${INVOKER_HOME}/share/chisel_x64.exe"
-	ln -s /usr/share/windows-resources/binaries/plink.exe "${INVOKER_HOME}/share/plink.exe"
-	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.exe "${INVOKER_HOME}/share/SharpHound-legacy.exe"
-	ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.ps1 "${INVOKER_HOME}/share/SharpHound-legacy.ps1"
-	wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}/share/antak.aspx" && sed -i '12,13d' "${INVOKER_HOME}/share/antak.aspx" && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}/share/antak.aspx" && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}/share/antak.aspx"
-	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}/share/GodPotato-NET4.exe"
-	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}/share/GodPotato-NET35.exe"
-	wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}/share/GodPotato-NET2.exe"
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_agent_Win64 && mv /tmp/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Win64.exe" && rm -rf /tmp/ligolo-ng_agent_Win64 && rm /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_proxy_Win64 && mv /tmp/ligolo-ng_proxy_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Win64.exe" && rm -rf /tmp/ligolo-ng_proxy_Win64 && rm /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_agent_Linux64 && mv /tmp/ligolo-ng_agent_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Linux64.exe" && rm -rf /tmp/ligolo-ng_agent_Linux64 && rm /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
-	wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_proxy_Linux64 && mv /tmp/ligolo-ng_proxy_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Linux64.exe" && rm -rf /tmp/ligolo-ng_proxy_Linux64 && rm /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
+	cprint "{{BLUE:[*]}} Creating share directory"
+	# ln -s /usr/share/peass/linpeas/linpeas.sh "${INVOKER_HOME}/share/linpeas.sh"
+	# ln -s /usr/share/peass/winpeas/winPEAS.bat "${INVOKER_HOME}/share/winPEAS.bat"
+	# ln -s /usr/share/peass/winpeas/winPEAS.ps1 "${INVOKER_HOME}/share/winPEAS.ps1"
+	# ln -s /usr/share/peass/winpeas/winPEASx64.exe "${INVOKER_HOME}/share/winPEASx64.exe"
+	# ln -s /usr/share/peass/winpeas/winPEASx64_ofs.exe "${INVOKER_HOME}/share/winPEASx64_ofs.exe"
+	# ln -s /usr/share/peass/winpeas/winPEASx86.exe "${INVOKER_HOME}/share/winPEASx86.exe"
+	# ln -s /usr/share/peass/winpeas/winPEASx86_ofs.exe "${INVOKER_HOME}/share/winPEASx86_ofs.exe"
+	# ln -s /usr/share/windows-resources/mimikatz/x64/mimikatz.exe "${INVOKER_HOME}/share/mimikatz.exe"
+	# ln -s /usr/share/windows-resources/mimikatz/Win32/mimikatz.exe "${INVOKER_HOME}/share/mimikatz32.exe"
+	# ln -s /usr/share/windows-resources/rubeus/Rubeus.exe "${INVOKER_HOME}/share/Rubeus.exe"
+	# ln -s /usr/share/windows-resources/windows-privesc-check/windows-privesc-check2.exe "${INVOKER_HOME}/share/windows-privesc-check.exe"
+	# ln -s /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 "${INVOKER_HOME}/share/PowerUp.ps1"
+	# ln -s /usr/share/windows-resources/powersploit/Recon/PowerView.ps1 "${INVOKER_HOME}/share/PowerView.ps1"
+	# ln -s /usr/share/windows-resources/powersploit/Recon/Invoke-Portscan.ps1 "${INVOKER_HOME}/share/Invoke-Portscan.ps1"
+	# ln -s /usr/share/windows-resources/powercat/powercat.ps1 "${INVOKER_HOME}/share/powercat.ps1"
+	# ln -s /usr/share/windows-resources/ncat/ncat.exe "${INVOKER_HOME}/share/ncat.exe"
+	# ln -s /usr/share/windows-resources/binaries/chisel_1.12.0-rc3_windows_amd64.exe "${INVOKER_HOME}/share/chisel_x64.exe"
+	# ln -s /usr/share/windows-resources/binaries/plink.exe "${INVOKER_HOME}/share/plink.exe"
+	# ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.exe "${INVOKER_HOME}/share/SharpHound-legacy.exe"
+	# ln -s /usr/share/windows-resources/BloodHound/resources/app/Collectors/SharpHound.ps1 "${INVOKER_HOME}/share/SharpHound-legacy.ps1"
+	# wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}/share/antak.aspx" && sed -i '12,13d' "${INVOKER_HOME}/share/antak.aspx" && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}/share/antak.aspx" && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}/share/antak.aspx"
+	# wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}/share/GodPotato-NET4.exe"
+	# wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}/share/GodPotato-NET35.exe"
+	# wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}/share/GodPotato-NET2.exe"
+	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_agent_Win64 && mv /tmp/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Win64.exe" && rm -rf /tmp/ligolo-ng_agent_Win64 && rm /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip
+	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_proxy_Win64 && mv /tmp/ligolo-ng_proxy_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Win64.exe" && rm -rf /tmp/ligolo-ng_proxy_Win64 && rm /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip
+	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_agent_Linux64 && mv /tmp/ligolo-ng_agent_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Linux64.exe" && rm -rf /tmp/ligolo-ng_agent_Linux64 && rm /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
+	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_proxy_Linux64 && mv /tmp/ligolo-ng_proxy_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Linux64.exe" && rm -rf /tmp/ligolo-ng_proxy_Linux64 && rm /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
 	# Inveigh.exe
 	# SharpGPOAbuse.exe
 	# Snaffler.exe
 	# Certify.exe
 	# RunasCs.exe
 	# PsTools
-	# kerbrute
 	# Adjust file ownership
 	cprint "{{BLUE:[*]}} Adjusting share directory ownership" && chown -R "${INVOKER}:$(id -gn "${INVOKER}")" "${INVOKER_HOME}/share"
 	# ================ Tweaking xfce4
