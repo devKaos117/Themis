@@ -559,11 +559,11 @@ time {
 	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}/tools/kiterunner"
 	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}/tools/shcheck"
 	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}/tools/jwt_tool"
-	# kerbrute
+	cprint "\t{{BLUE:[*]}} Installing kerbrute" && go install github.com/ropnop/kerbrute@latest || cprint "\t\t{{RED:[!]}} Failed to install kerbrute"
 	# Configure kiterunner
-	# make -C "${INVOKER_HOME}/tools/kiterunner" build && ln "${INVOKER_HOME}/tools/kiterunner/dist/kr" "${INVOKER_HOME}/go/bin/kr"
-	# wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" && tar xzvf "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" -C "${INVOKER_HOME}/tools/kiterunner/routes/" && rm "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz"
-	# for file in "${INVOKER_HOME}/tools/kiterunner/routes/*.json" ; do kr kb compile $file "$file.kite" ; done
+	make -C "${INVOKER_HOME}/tools/kiterunner" build && ln "${INVOKER_HOME}/tools/kiterunner/dist/kr" "${INVOKER_HOME}/go/bin/kr"
+	wget https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz -O "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" && tar xzvf "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz" -C "${INVOKER_HOME}/tools/kiterunner/routes/" && rm "${INVOKER_HOME}/tools/kiterunner/routes/routes-large.json.tar.gz"
+	for file in "${INVOKER_HOME}/tools/kiterunner/routes/"*.json ; do kr kb compile $file "$file.kite" ; done
 	# ReconSpider.py
 	wget https://raw.githubusercontent.com/devKaos117/Metis/refs/heads/main/TA0043/ReconSpider.py -O "${INVOKER_HOME}/tools/ReconSpider.py"
 	# Bloodhound-legacy
