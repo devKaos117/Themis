@@ -566,6 +566,7 @@ time {
 	sudo -u "${INVOKER}" git clone https://github.com/assetnote/kiterunner "${INVOKER_HOME}/tools/kiterunner"
 	sudo -u "${INVOKER}" git clone https://github.com/santoru/shcheck "${INVOKER_HOME}/tools/shcheck"
 	sudo -u "${INVOKER}" git clone https://github.com/ticarpi/jwt_tool "${INVOKER_HOME}/tools/jwt_tool"
+	wget https://raw.githubusercontent.com/wallarm/jwt-secrets/refs/heads/master/jwt.secrets.list -O /usr/share/wordlists/jwt.secrets.list
 	cprint "\t{{BLUE:[*]}} Installing kerbrute" && go install github.com/ropnop/kerbrute@latest || cprint "\t\t{{RED:[!]}} Failed to install kerbrute"
 	# Configure kiterunner
 	make -C "${INVOKER_HOME}/tools/kiterunner" build && ln "${INVOKER_HOME}/tools/kiterunner/dist/kr" "${INVOKER_HOME}/go/bin/kr"
