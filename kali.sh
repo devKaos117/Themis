@@ -336,6 +336,13 @@ set_user_xfconf() {
 	fi
 }
 
+# ================ Fetch the latest release download URLs from GitHub
+github_latest(){
+	local account="$1"
+	local repo="$2"
+	curl -s "https://api.github.com/repos/${account}/${repo}/releases/latest" | jq '.assets[].browser_download_url' | sed 's/"//g'
+}
+
 # ============================================================================
 # INITIALIZATIONS
 # ============================================================================
@@ -596,14 +603,10 @@ time {
 	ln -s /usr/share/sharphound/SharpHound.ps1 "${INVOKER_HOME}/share/SharpHound.ps1"
 	ln -s "${INVOKER_HOME}/tools/BloodHound/resources/app/Collectors/SharpHound.exe" "${INVOKER_HOME}/share/SharpHound-legacy.exe"
 	ln -s "${INVOKER_HOME}/tools/BloodHound/resources/app/Collectors/SharpHound.ps1" "${INVOKER_HOME}/share/SharpHound-legacy.ps1"
-	# wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}/share/antak.aspx" && sed -i '12,13d' "${INVOKER_HOME}/share/antak.aspx" && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}/share/antak.aspx" && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}/share/antak.aspx"
-	# wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET4.exe -O "${INVOKER_HOME}/share/GodPotato-NET4.exe"
-	# wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET35.exe -O "${INVOKER_HOME}/share/GodPotato-NET35.exe"
-	# wget https://github.com/BeichenDream/GodPotato/releases/download/V1.20/GodPotato-NET2.exe -O "${INVOKER_HOME}/share/GodPotato-NET2.exe"
-	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_agent_Win64 && mv /tmp/ligolo-ng_agent_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Win64.exe" && rm -rf /tmp/ligolo-ng_agent_Win64 && rm /tmp/ligolo-ng_agent_0.9.1_windows_amd64.zip
-	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_windows_amd64.zip -O /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip && unzip /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip -d /tmp/ligolo-ng_proxy_Win64 && mv /tmp/ligolo-ng_proxy_Win64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Win64.exe" && rm -rf /tmp/ligolo-ng_proxy_Win64 && rm /tmp/ligolo-ng_proxy_0.9.1_windows_amd64.zip
-	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_agent_Linux64 && mv /tmp/ligolo-ng_agent_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_agent_Linux64.exe" && rm -rf /tmp/ligolo-ng_agent_Linux64 && rm /tmp/ligolo-ng_agent_0.9.1_linux_amd64.tar.gz
-	# wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.9.1/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -O /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz && unzip /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz -d /tmp/ligolo-ng_proxy_Linux64 && mv /tmp/ligolo-ng_proxy_Linux64/agent.exe "${INVOKER_HOME}/share/ligolo-ng_proxy_Linux64.exe" && rm -rf /tmp/ligolo-ng_proxy_Linux64 && rm /tmp/ligolo-ng_proxy_0.9.1_linux_amd64.tar.gz
+	wget https://raw.githubusercontent.com/samratashok/nishang/refs/heads/master/Antak-WebShell/antak.aspx -O "${INVOKER_HOME}/share/antak.aspx" && sed -i '12,13d' "${INVOKER_HOME}/share/antak.aspx" && sed -i 's/Disclaimer/kaos/g' "${INVOKER_HOME}/share/antak.aspx" && sed -i "s/ForLegitUseOnly/$(echo -n $(date) | sha256sum | cut -d ' ' -f 1)/g" "${INVOKER_HOME}/share/antak.aspx"
+	# GodPotato
+	for i in $(github_latest BeichenDream GodPotato); do wget $i -O "${INVOKER_HOME}/share/$(echo "$i" | sed 's/.*\///')" ; done
+	# ligolo-ng
 	# Inveigh.exe
 	# SharpGPOAbuse.exe
 	# Snaffler.exe
